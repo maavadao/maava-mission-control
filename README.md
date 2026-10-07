@@ -58,10 +58,10 @@ A starter file exists at `.env.example`.
   - In `dev`, if you **don’t** explicitly set `DB_AUTO_MIGRATE`, the backend defaults it to `true`.
 - `LOG_LEVEL` (default: `INFO`)
 - `DATABASE_URL`
-  - Point this at the existing Barrsa Postgres database when running Mission Control alongside the main app.
+  - Point this at the existing mawaDao Postgres database when running Mission Control alongside the main app.
 - `DATABASE_SCHEMA`
   - Default: `mission_control`
-  - Mission Control creates and uses this schema inside the shared database so its tables do not collide with Barrsa tables like `users` and `agents`.
+  - Mission Control creates and uses this schema inside the shared database so its tables do not collide with mawaDao tables like `users` and `agents`.
 - `CORS_ORIGINS` (comma-separated)
   - Example: `http://localhost:3000`
 - `BASE_URL` (optional; required only for gateway provisioning/agent heartbeat templates)
