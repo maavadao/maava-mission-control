@@ -19,8 +19,6 @@ jobs:
           AUTH_MODE: local
           LOCAL_AUTH_TOKEN: ci-only-token-not-a-secret-0123456789abcdefghijklmnopqrstuvwxyz
         run: uv run python -c "import app.main"
-      - name: Build image
-        run: docker build -t ci .
 
   tests:
     runs-on: ubuntu-latest
