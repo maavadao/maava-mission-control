@@ -11,3 +11,8 @@ requirements-dev.txt
 
 # Generated for orval input (avoid needing a running backend/DB).
 openapi.json
+
+# local environment files; the example is committed
+.env
+.env.*
+!.env.example
