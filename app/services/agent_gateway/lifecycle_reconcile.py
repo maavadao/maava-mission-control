@@ -10,9 +10,9 @@ from app.db.session import async_session_maker
 from app.models.agents import Agent
 from app.models.boards import Board
 from app.models.gateways import Gateway
-from app.services.openclaw.constants import MAX_WAKE_ATTEMPTS_WITHOUT_CHECKIN
-from app.services.openclaw.lifecycle_orchestrator import AgentLifecycleOrchestrator
-from app.services.openclaw.lifecycle_queue import decode_lifecycle_task, defer_lifecycle_reconcile
+from app.services.agent_gateway.constants import MAX_WAKE_ATTEMPTS_WITHOUT_CHECKIN
+from app.services.agent_gateway.lifecycle_orchestrator import AgentLifecycleOrchestrator
+from app.services.agent_gateway.lifecycle_queue import decode_lifecycle_task, defer_lifecycle_reconcile
 from app.services.queue import QueuedTask
 
 logger = get_logger(__name__)

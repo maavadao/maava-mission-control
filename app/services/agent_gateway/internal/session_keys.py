@@ -1,6 +1,6 @@
-"""Deterministic session-key helpers for OpenClaw agents.
+"""Deterministic session-key helpers for gateway agents.
 
-Session keys are part of Mission Control's contract with the OpenClaw gateway.
+Session keys are part of Mission Control's contract with the mawaDao Agent gateway.
 Centralize the string formats here to avoid drift across provisioning, DB workflows,
 and API-facing services.
 """
@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from app.services.openclaw.constants import AGENT_SESSION_PREFIX
-from app.services.openclaw.shared import GatewayAgentIdentity
+from app.services.agent_gateway.constants import AGENT_SESSION_PREFIX
+from app.services.agent_gateway.shared import GatewayAgentIdentity
 
 
 def gateway_main_session_key(gateway_id: UUID) -> str:

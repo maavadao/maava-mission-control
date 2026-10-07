@@ -38,7 +38,7 @@ from app.services.approval_task_links import (
     replace_approval_task_links,
     task_counts_for_board,
 )
-from app.services.openclaw.gateway_dispatch import GatewayDispatchService
+from app.services.agent_gateway.gateway_dispatch import GatewayDispatchService
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Sequence

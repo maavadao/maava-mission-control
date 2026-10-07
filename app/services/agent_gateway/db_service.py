@@ -1,7 +1,7 @@
-"""Shared DB-backed service base classes for OpenClaw.
+"""Shared DB-backed service base classes for mawaDao Agent.
 
 These helpers are intentionally small: they reduce boilerplate (session + logger) across
-OpenClaw services without adding new architectural layers.
+mawaDao Agent services without adding new architectural layers.
 """
 
 from __future__ import annotations
@@ -15,8 +15,8 @@ if TYPE_CHECKING:
     from sqlmodel.ext.asyncio.session import AsyncSession
 
 
-class OpenClawDBService:
-    """Base class for OpenClaw services that require an AsyncSession."""
+class AgentDBService:
+    """Base class for mawaDao Agent services that require an AsyncSession."""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session

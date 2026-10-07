@@ -1,7 +1,7 @@
-"""OpenClaw gateway websocket RPC client and protocol constants.
+"""mawaDao Agent gateway websocket RPC client and protocol constants.
 
-This is the low-level, DB-free interface for talking to the OpenClaw gateway.
-Keep gateway RPC protocol details and client helpers here so OpenClaw services
+This is the low-level, DB-free interface for talking to the mawaDao Agent gateway.
+Keep gateway RPC protocol details and client helpers here so mawaDao Agent services
 operate within a single scope (no `app.integrations.*` plumbing).
 """
 
@@ -20,7 +20,7 @@ import websockets
 from websockets.exceptions import WebSocketException
 
 from app.core.logging import TRACE_LEVEL, get_logger
-from app.services.openclaw.device_identity import (
+from app.services.agent_gateway.device_identity import (
     build_device_auth_payload,
     load_or_create_device_identity,
     public_key_raw_base64url_from_pem,
@@ -41,7 +41,7 @@ CONTROL_UI_CLIENT_ID = "openclaw-control-ui"
 CONTROL_UI_CLIENT_MODE = "ui"
 GatewayConnectMode = Literal["device", "control_ui"]
 
-# NOTE: These are the base gateway methods from the OpenClaw gateway repo.
+# NOTE: These are the base gateway methods from the mawaDao Agent gateway repo.
 # The gateway can expose additional methods at runtime via channel plugins.
 GATEWAY_METHODS = [
     "health",
@@ -162,13 +162,13 @@ def is_known_gateway_method(method: str) -> bool:
     return method in GATEWAY_METHODS_SET
 
 
-class OpenClawGatewayError(RuntimeError):
-    """Raised when OpenClaw gateway calls fail."""
+class AgentGatewayError(RuntimeError):
+    """Raised when mawaDao Agent gateway calls fail."""
 
 
 @dataclass(frozen=True)
 class GatewayConfig:
-    """Connection configuration for the OpenClaw gateway."""
+    """Connection configuration for the mawaDao Agent gateway."""
 
     url: str
     token: str | None = None
@@ -184,7 +184,7 @@ def _build_gateway_url(config: GatewayConfig) -> str:
     base_url: str = (config.url or "").strip()
     if not base_url:
         message = "Gateway URL is not configured."
-        raise OpenClawGatewayError(message)
+        raise AgentGatewayError(message)
     token = config.token
     if not token:
         return base_url
@@ -288,13 +288,13 @@ async def _await_response(
             ok = data.get("ok")
             if ok is not None and not ok:
                 error = data.get("error", {}).get("message", "Gateway error")
-                raise OpenClawGatewayError(error)
+                raise AgentGatewayError(error)
             return data.get("payload")
 
         if data.get("id") == request_id:
             if data.get("error"):
                 message = data["error"].get("message", "Gateway error")
-                raise OpenClawGatewayError(message)
+                raise AgentGatewayError(message)
             return data.get("result")
 
 
@@ -398,7 +398,7 @@ async def _recv_first_message_or_none(
         return None
 
 
-async def _openclaw_call_once(
+async def _gateway_call_once(
     method: str,
     params: dict[str, Any] | None,
     *,
@@ -418,7 +418,7 @@ async def _openclaw_call_once(
         return await _send_request(ws, method, params)
 
 
-async def _openclaw_connect_metadata_once(
+async def _gateway_connect_metadata_once(
     *,
     config: GatewayConfig,
     gateway_url: str,
@@ -435,7 +435,7 @@ async def _openclaw_connect_metadata_once(
         return await _ensure_connected(ws, first_message, config)
 
 
-async def openclaw_call(
+async def gateway_call(
     method: str,
     params: dict[str, Any] | None = None,
     *,
@@ -444,8 +444,8 @@ async def openclaw_call(
     """Call a gateway RPC method and return the result payload."""
     if config.integration_mode == "rest_bridge":
         # Local import avoids a circular import: gateway_rest_bridge imports
-        # GatewayConfig/OpenClawGatewayError from this module.
-        from app.services.openclaw.gateway_rest_bridge import rest_bridge_call
+        # GatewayConfig/AgentGatewayError from this module.
+        from app.services.agent_gateway.gateway_rest_bridge import rest_bridge_call
 
         started_at = perf_counter()
         logger.debug(
@@ -461,7 +461,7 @@ async def openclaw_call(
                 int((perf_counter() - started_at) * 1000),
             )
             return payload
-        except OpenClawGatewayError:
+        except AgentGatewayError:
             logger.warning(
                 "gateway.rest_bridge.call.gateway_error method=%s duration_ms=%s",
                 method,
@@ -482,7 +482,7 @@ async def openclaw_call(
         config.disable_device_pairing,
     )
     try:
-        payload = await _openclaw_call_once(
+        payload = await _gateway_call_once(
             method,
             params,
             config=config,
@@ -494,7 +494,7 @@ async def openclaw_call(
             int((perf_counter() - started_at) * 1000),
         )
         return payload
-    except OpenClawGatewayError:
+    except AgentGatewayError:
         logger.warning(
             "gateway.rpc.call.gateway_error method=%s duration_ms=%s",
             method,
@@ -514,13 +514,13 @@ async def openclaw_call(
             int((perf_counter() - started_at) * 1000),
             exc.__class__.__name__,
         )
-        raise OpenClawGatewayError(str(exc)) from exc
+        raise AgentGatewayError(str(exc)) from exc
 
 
-async def openclaw_connect_metadata(*, config: GatewayConfig) -> object:
+async def gateway_connect_metadata(*, config: GatewayConfig) -> object:
     """Open a gateway connection and return the connect/hello payload."""
     if config.integration_mode == "rest_bridge":
-        from app.services.openclaw.gateway_rest_bridge import rest_bridge_connect_metadata
+        from app.services.agent_gateway.gateway_rest_bridge import rest_bridge_connect_metadata
 
         started_at = perf_counter()
         logger.debug(
@@ -534,7 +534,7 @@ async def openclaw_connect_metadata(*, config: GatewayConfig) -> object:
                 int((perf_counter() - started_at) * 1000),
             )
             return metadata
-        except OpenClawGatewayError:
+        except AgentGatewayError:
             logger.warning(
                 "gateway.rest_bridge.connect_metadata.gateway_error duration_ms=%s",
                 int((perf_counter() - started_at) * 1000),
@@ -548,7 +548,7 @@ async def openclaw_connect_metadata(*, config: GatewayConfig) -> object:
         _redacted_url_for_log(gateway_url),
     )
     try:
-        metadata = await _openclaw_connect_metadata_once(
+        metadata = await _gateway_connect_metadata_once(
             config=config,
             gateway_url=gateway_url,
         )
@@ -557,7 +557,7 @@ async def openclaw_connect_metadata(*, config: GatewayConfig) -> object:
             int((perf_counter() - started_at) * 1000),
         )
         return metadata
-    except OpenClawGatewayError:
+    except AgentGatewayError:
         logger.warning(
             "gateway.rpc.connect_metadata.gateway_error duration_ms=%s",
             int((perf_counter() - started_at) * 1000),
@@ -575,7 +575,7 @@ async def openclaw_connect_metadata(*, config: GatewayConfig) -> object:
             int((perf_counter() - started_at) * 1000),
             exc.__class__.__name__,
         )
-        raise OpenClawGatewayError(str(exc)) from exc
+        raise AgentGatewayError(str(exc)) from exc
 
 
 async def send_message(
@@ -592,7 +592,7 @@ async def send_message(
         "deliver": deliver,
         "idempotencyKey": str(uuid4()),
     }
-    return await openclaw_call("chat.send", params, config=config)
+    return await gateway_call("chat.send", params, config=config)
 
 
 async def get_chat_history(
@@ -604,12 +604,12 @@ async def get_chat_history(
     params: dict[str, Any] = {"sessionKey": session_key}
     if limit is not None:
         params["limit"] = limit
-    return await openclaw_call("chat.history", params, config=config)
+    return await gateway_call("chat.history", params, config=config)
 
 
 async def delete_session(session_key: str, *, config: GatewayConfig) -> object:
     """Delete a session by key."""
-    return await openclaw_call("sessions.delete", {"key": session_key}, config=config)
+    return await gateway_call("sessions.delete", {"key": session_key}, config=config)
 
 
 async def ensure_session(
@@ -622,4 +622,4 @@ async def ensure_session(
     params: dict[str, Any] = {"key": session_key}
     if label:
         params["label"] = label
-    return await openclaw_call("sessions.patch", params, config=config)
+    return await gateway_call("sessions.patch", params, config=config)

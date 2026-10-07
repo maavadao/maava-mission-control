@@ -20,20 +20,20 @@ from app.schemas.gateway_api import (
     GatewaySessionsResponse,
     GatewaysStatusResponse,
 )
-from app.services.openclaw.db_service import OpenClawDBService
-from app.services.openclaw.error_messages import normalize_gateway_error_message
-from app.services.openclaw.gateway_compat import check_gateway_version_compatibility
-from app.services.openclaw.gateway_resolver import gateway_client_config, require_gateway_for_board
-from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
-from app.services.openclaw.gateway_rpc import (
-    OpenClawGatewayError,
+from app.services.agent_gateway.db_service import AgentDBService
+from app.services.agent_gateway.error_messages import normalize_gateway_error_message
+from app.services.agent_gateway.gateway_compat import check_gateway_version_compatibility
+from app.services.agent_gateway.gateway_resolver import gateway_client_config, require_gateway_for_board
+from app.services.agent_gateway.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.agent_gateway.gateway_rpc import (
+    AgentGatewayError,
     ensure_session,
     get_chat_history,
-    openclaw_call,
+    gateway_call,
     send_message,
 )
-from app.services.openclaw.policies import OpenClawAuthorizationPolicy
-from app.services.openclaw.shared import GatewayAgentIdentity
+from app.services.agent_gateway.policies import AgentAuthorizationPolicy
+from app.services.agent_gateway.shared import GatewayAgentIdentity
 from app.services.organizations import require_board_access
 
 if TYPE_CHECKING:
@@ -55,7 +55,7 @@ class GatewayTemplateSyncQuery:
     board_id: UUID | None
 
 
-class GatewaySessionService(OpenClawDBService):
+class GatewaySessionService(AgentDBService):
     """Read/query gateway runtime session state for user-facing APIs."""
 
     def __init__(self, session: AsyncSession) -> None:
@@ -180,7 +180,7 @@ class GatewaySessionService(OpenClawDBService):
         return board, config, main_session
 
     async def list_sessions(self, config: GatewayClientConfig) -> list[dict[str, object]]:
-        sessions = await openclaw_call("sessions.list", config=config)
+        sessions = await gateway_call("sessions.list", config=config)
         if isinstance(sessions, dict):
             raw_items = self.as_object_list(sessions.get("sessions"))
         else:
@@ -199,14 +199,14 @@ class GatewaySessionService(OpenClawDBService):
         try:
             await ensure_session(main_session, config=config, label="Gateway Agent")
             return await self.list_sessions(config)
-        except OpenClawGatewayError:
+        except AgentGatewayError:
             return sessions_list
 
     @staticmethod
     def _require_same_org(board: Board | None, organization_id: UUID) -> None:
         if board is None:
             return
-        OpenClawAuthorizationPolicy.require_board_write_access(
+        AgentAuthorizationPolicy.require_board_write_access(
             allowed=board.organization_id == organization_id,
         )
 
@@ -225,7 +225,7 @@ class GatewaySessionService(OpenClawDBService):
         self._require_same_org(board, organization_id)
         try:
             compatibility = await check_gateway_version_compatibility(config)
-        except OpenClawGatewayError as exc:
+        except AgentGatewayError as exc:
             return GatewaysStatusResponse(
                 connected=False,
                 gateway_url=config.url,
@@ -238,7 +238,7 @@ class GatewaySessionService(OpenClawDBService):
                 error=compatibility.message,
             )
         try:
-            sessions = await openclaw_call("sessions.list", config=config)
+            sessions = await gateway_call("sessions.list", config=config)
             if isinstance(sessions, dict):
                 sessions_list = self.as_object_list(sessions.get("sessions"))
             else:
@@ -254,7 +254,7 @@ class GatewaySessionService(OpenClawDBService):
                     )
                     if isinstance(ensured, dict):
                         main_session_entry = ensured.get("entry") or ensured
-                except OpenClawGatewayError as exc:
+                except AgentGatewayError as exc:
                     main_session_error = str(exc)
             return GatewaysStatusResponse(
                 connected=True,
@@ -264,7 +264,7 @@ class GatewaySessionService(OpenClawDBService):
                 main_session=main_session_entry,
                 main_session_error=main_session_error,
             )
-        except OpenClawGatewayError as exc:
+        except AgentGatewayError as exc:
             return GatewaysStatusResponse(
                 connected=False,
                 gateway_url=config.url,
@@ -282,8 +282,8 @@ class GatewaySessionService(OpenClawDBService):
         board, config, main_session = await self.resolve_gateway(params, user=user)
         self._require_same_org(board, organization_id)
         try:
-            sessions = await openclaw_call("sessions.list", config=config)
-        except OpenClawGatewayError as exc:
+            sessions = await gateway_call("sessions.list", config=config)
+        except AgentGatewayError as exc:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=str(exc),
@@ -303,7 +303,7 @@ class GatewaySessionService(OpenClawDBService):
                 )
                 if isinstance(ensured, dict):
                     main_session_entry = ensured.get("entry") or ensured
-            except OpenClawGatewayError:
+            except AgentGatewayError:
                 main_session_entry = None
         return GatewaySessionsResponse(sessions=sessions_list, main_session=main_session_entry)
 
@@ -320,7 +320,7 @@ class GatewaySessionService(OpenClawDBService):
         self._require_same_org(board, organization_id)
         try:
             sessions_list = await self.list_sessions(config)
-        except OpenClawGatewayError as exc:
+        except AgentGatewayError as exc:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=str(exc),
@@ -342,7 +342,7 @@ class GatewaySessionService(OpenClawDBService):
                 )
                 if isinstance(ensured, dict):
                     session_entry = ensured.get("entry") or ensured
-            except OpenClawGatewayError:
+            except AgentGatewayError:
                 session_entry = None
         if session_entry is None:
             raise HTTPException(
@@ -363,7 +363,7 @@ class GatewaySessionService(OpenClawDBService):
         self._require_same_org(board, organization_id)
         try:
             history = await get_chat_history(session_id, config=config)
-        except OpenClawGatewayError as exc:
+        except AgentGatewayError as exc:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=str(exc),
@@ -390,7 +390,7 @@ class GatewaySessionService(OpenClawDBService):
             if main_session and session_id == main_session:
                 await ensure_session(main_session, config=config, label="Gateway Agent")
             await send_message(payload.content, session_key=session_id, config=config)
-        except OpenClawGatewayError as exc:
+        except AgentGatewayError as exc:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=str(exc),

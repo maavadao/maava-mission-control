@@ -1,11 +1,11 @@
-"""Shared OpenClaw lifecycle primitives."""
+"""Shared mawaDao Agent lifecycle primitives."""
 
 from __future__ import annotations
 
 from uuid import UUID
 
 from app.models.gateways import Gateway
-from app.services.openclaw.constants import (
+from app.services.agent_gateway.constants import (
     _GATEWAY_AGENT_PREFIX,
     _GATEWAY_AGENT_SUFFIX,
     _GATEWAY_OPENCLAW_AGENT_PREFIX,

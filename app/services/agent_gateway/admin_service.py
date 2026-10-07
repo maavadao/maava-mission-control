@@ -20,19 +20,19 @@ from app.models.board_webhooks import BoardWebhook
 from app.models.gateways import Gateway
 from app.models.tasks import Task
 from app.schemas.gateways import GatewayTemplatesSyncResult
-from app.services.openclaw.constants import DEFAULT_HEARTBEAT_CONFIG
-from app.services.openclaw.db_service import OpenClawDBService
-from app.services.openclaw.error_messages import normalize_gateway_error_message
-from app.services.openclaw.gateway_compat import check_gateway_version_compatibility
-from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
-from app.services.openclaw.gateway_rpc import OpenClawGatewayError, openclaw_call
-from app.services.openclaw.lifecycle_orchestrator import AgentLifecycleOrchestrator
-from app.services.openclaw.provisioning_db import (
+from app.services.agent_gateway.constants import DEFAULT_HEARTBEAT_CONFIG
+from app.services.agent_gateway.db_service import AgentDBService
+from app.services.agent_gateway.error_messages import normalize_gateway_error_message
+from app.services.agent_gateway.gateway_compat import check_gateway_version_compatibility
+from app.services.agent_gateway.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.agent_gateway.gateway_rpc import AgentGatewayError, gateway_call
+from app.services.agent_gateway.lifecycle_orchestrator import AgentLifecycleOrchestrator
+from app.services.agent_gateway.provisioning_db import (
     GatewayTemplateSyncOptions,
-    OpenClawProvisioningService,
+    AgentProvisioningService,
 )
-from app.services.openclaw.session_service import GatewayTemplateSyncQuery
-from app.services.openclaw.shared import GatewayAgentIdentity
+from app.services.agent_gateway.session_service import GatewayTemplateSyncQuery
+from app.services.agent_gateway.shared import GatewayAgentIdentity
 
 if TYPE_CHECKING:
     from sqlmodel.ext.asyncio.session import AsyncSession
@@ -66,7 +66,7 @@ class DefaultGatewayMainAgentManager(AbstractGatewayMainAgentManager):
         }
 
 
-class GatewayAdminLifecycleService(OpenClawDBService):
+class GatewayAdminLifecycleService(AgentDBService):
     """Write-side gateway lifecycle service (CRUD, main agent, template sync)."""
 
     def __init__(
@@ -171,8 +171,8 @@ class GatewayAdminLifecycleService(OpenClawDBService):
         )
         target_id = GatewayAgentIdentity.openclaw_agent_id(gateway)
         try:
-            await openclaw_call("agents.files.list", {"agentId": target_id}, config=config)
-        except OpenClawGatewayError as exc:
+            await gateway_call("agents.files.list", {"agentId": target_id}, config=config)
+        except AgentGatewayError as exc:
             message = str(exc).lower()
             if any(marker in message for marker in ("not found", "unknown agent", "no such agent")):
                 return False
@@ -198,7 +198,7 @@ class GatewayAdminLifecycleService(OpenClawDBService):
         )
         try:
             result = await check_gateway_version_compatibility(config)
-        except OpenClawGatewayError as exc:
+        except AgentGatewayError as exc:
             detail = normalize_gateway_error_message(str(exc))
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
@@ -349,7 +349,7 @@ class GatewayAdminLifecycleService(OpenClawDBService):
             query.include_main,
         )
         await self.ensure_gateway_agents_exist([gateway])
-        result = await OpenClawProvisioningService(self.session).sync_gateway_templates(
+        result = await AgentProvisioningService(self.session).sync_gateway_templates(
             gateway,
             GatewayTemplateSyncOptions(
                 user=auth.user,

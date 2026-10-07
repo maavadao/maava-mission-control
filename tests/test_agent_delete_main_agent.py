@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-import app.services.openclaw.provisioning_db as agent_service
+import app.services.agent_gateway.provisioning_db as agent_service
 from app.models.approvals import Approval
 
 
@@ -120,7 +120,7 @@ async def test_delete_gateway_main_agent_does_not_require_board_id(
     monkeypatch.setattr(service, "require_board", _should_not_be_called)
     monkeypatch.setattr(service, "require_gateway", _should_not_be_called)
     monkeypatch.setattr(
-        agent_service.OpenClawGatewayProvisioner,
+        agent_service.AgentGatewayProvisioner,
         "delete_agent_lifecycle",
         _fake_delete_agent_lifecycle,
     )

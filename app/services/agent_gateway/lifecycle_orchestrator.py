@@ -16,19 +16,19 @@ from app.core.time import utcnow
 from app.models.agents import Agent
 from app.models.boards import Board
 from app.models.gateways import Gateway
-from app.services.openclaw.constants import CHECKIN_DEADLINE_AFTER_WAKE
-from app.services.openclaw.db_agent_state import (
+from app.services.agent_gateway.constants import CHECKIN_DEADLINE_AFTER_WAKE
+from app.services.agent_gateway.db_agent_state import (
     mark_provision_complete,
     mark_provision_requested,
     mint_agent_token,
 )
-from app.services.openclaw.db_service import OpenClawDBService
-from app.services.openclaw.gateway_rpc import OpenClawGatewayError
-from app.services.openclaw.lifecycle_queue import (
+from app.services.agent_gateway.db_service import AgentDBService
+from app.services.agent_gateway.gateway_rpc import AgentGatewayError
+from app.services.agent_gateway.lifecycle_queue import (
     QueuedAgentLifecycleReconcile,
     enqueue_lifecycle_reconcile,
 )
-from app.services.openclaw.provisioning import OpenClawGatewayProvisioner
+from app.services.agent_gateway.provisioning import AgentGatewayProvisioner
 from app.services.organizations import get_org_owner_user
 
 if TYPE_CHECKING:
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from app.models.users import User
 
 
-class AgentLifecycleOrchestrator(OpenClawDBService):
+class AgentLifecycleOrchestrator(AgentDBService):
     """Single lifecycle writer for agent provision/update transitions."""
 
     def __init__(self, session: AsyncSession) -> None:
@@ -106,7 +106,7 @@ class AgentLifecycleOrchestrator(OpenClawDBService):
             return locked
 
         try:
-            await OpenClawGatewayProvisioner().apply_agent_lifecycle(
+            await AgentGatewayProvisioner().apply_agent_lifecycle(
                 agent=locked,
                 gateway=gateway,
                 board=board,
@@ -119,7 +119,7 @@ class AgentLifecycleOrchestrator(OpenClawDBService):
                 deliver_wakeup=deliver_wakeup,
                 wakeup_verb=wakeup_verb,
             )
-        except OpenClawGatewayError as exc:
+        except AgentGatewayError as exc:
             locked.last_provision_error = str(exc)
             locked.updated_at = utcnow()
             self.session.add(locked)

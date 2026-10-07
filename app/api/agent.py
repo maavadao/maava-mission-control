@@ -53,9 +53,9 @@ from app.schemas.pagination import DefaultLimitOffsetPage
 from app.schemas.tags import TagRef
 from app.schemas.tasks import TaskCommentCreate, TaskCommentRead, TaskCreate, TaskRead, TaskUpdate
 from app.services.activity_log import record_activity
-from app.services.openclaw.coordination_service import GatewayCoordinationService
-from app.services.openclaw.policies import OpenClawAuthorizationPolicy
-from app.services.openclaw.provisioning_db import AgentLifecycleService
+from app.services.agent_gateway.coordination_service import GatewayCoordinationService
+from app.services.agent_gateway.policies import AgentAuthorizationPolicy
+from app.services.agent_gateway.provisioning_db import AgentLifecycleService
 from app.services.tags import replace_tags, validate_tag_ids
 from app.services.task_dependencies import (
     blocked_by_dependency_ids,
@@ -220,11 +220,11 @@ def _payload_preview_with_limit(
 
 def _guard_board_access(agent_ctx: AgentAuthContext, board: Board) -> None:
     allowed = not (agent_ctx.agent.board_id and agent_ctx.agent.board_id != board.id)
-    OpenClawAuthorizationPolicy.require_board_write_access(allowed=allowed)
+    AgentAuthorizationPolicy.require_board_write_access(allowed=allowed)
 
 
 def _require_board_lead(agent_ctx: AgentAuthContext) -> Agent:
-    return OpenClawAuthorizationPolicy.require_board_lead_actor(
+    return AgentAuthorizationPolicy.require_board_lead_actor(
         actor_agent=agent_ctx.agent,
         detail="Only board leads can perform this action",
     )
@@ -234,7 +234,7 @@ def _guard_task_access(agent_ctx: AgentAuthContext, task: Task) -> None:
     allowed = not (
         agent_ctx.agent.board_id and task.board_id and agent_ctx.agent.board_id != task.board_id
     )
-    OpenClawAuthorizationPolicy.require_board_write_access(allowed=allowed)
+    AgentAuthorizationPolicy.require_board_write_access(allowed=allowed)
 
 
 @router.get(
@@ -516,7 +516,7 @@ async def list_agents(
     statement = select(Agent)
     if agent_ctx.agent.board_id:
         if board_id:
-            OpenClawAuthorizationPolicy.require_board_write_access(
+            AgentAuthorizationPolicy.require_board_write_access(
                 allowed=board_id == agent_ctx.agent.board_id,
             )
         statement = statement.where(Agent.board_id == agent_ctx.agent.board_id)
@@ -1555,7 +1555,7 @@ async def get_agent_soul(
     Allowed for board lead, or for an agent reading its own SOUL.
     """
     _guard_board_access(agent_ctx, board)
-    OpenClawAuthorizationPolicy.require_board_lead_or_same_actor(
+    AgentAuthorizationPolicy.require_board_lead_or_same_actor(
         actor_agent=agent_ctx.agent,
         target_agent_id=agent_id,
     )

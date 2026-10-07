@@ -1,7 +1,7 @@
 """Board lifecycle services.
 
 This module contains DB-backed board workflows that may also interact with the
-OpenClaw gateway. API routes should remain thin wrappers over these helpers.
+mawaDao Agent gateway. API routes should remain thin wrappers over these helpers.
 """
 
 from __future__ import annotations
@@ -28,9 +28,9 @@ from app.models.task_dependencies import TaskDependency
 from app.models.task_fingerprints import TaskFingerprint
 from app.models.tasks import Task
 from app.schemas.common import OkResponse
-from app.services.openclaw.gateway_resolver import gateway_client_config, require_gateway_for_board
-from app.services.openclaw.gateway_rpc import OpenClawGatewayError
-from app.services.openclaw.provisioning import OpenClawGatewayProvisioner
+from app.services.agent_gateway.gateway_resolver import gateway_client_config, require_gateway_for_board
+from app.services.agent_gateway.gateway_rpc import AgentGatewayError
+from app.services.agent_gateway.provisioning import AgentGatewayProvisioner
 
 if TYPE_CHECKING:
     from sqlmodel.ext.asyncio.session import AsyncSession
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from app.models.boards import Board
 
 
-def _is_missing_gateway_agent_error(exc: OpenClawGatewayError) -> bool:
+def _is_missing_gateway_agent_error(exc: AgentGatewayError) -> bool:
     message = str(exc).lower()
     if not message:
         return False
@@ -60,11 +60,11 @@ async def delete_board(session: AsyncSession, *, board: Board) -> OkResponse:
         gateway_client_config(gateway)
         for agent in agents:
             try:
-                await OpenClawGatewayProvisioner().delete_agent_lifecycle(
+                await AgentGatewayProvisioner().delete_agent_lifecycle(
                     agent=agent,
                     gateway=gateway,
                 )
-            except OpenClawGatewayError as exc:
+            except AgentGatewayError as exc:
                 if _is_missing_gateway_agent_error(exc):
                     continue
                 raise HTTPException(

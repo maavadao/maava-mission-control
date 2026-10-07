@@ -1,13 +1,13 @@
 # ruff: noqa: S101
-"""Architectural boundary tests for OpenClaw service imports."""
+"""Architectural boundary tests for mawaDao Agent service imports."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
 
-def test_no_openclaw_package_barrel_imports() -> None:
-    """Disallow `from app.services.openclaw import ...` in backend code."""
+def test_no_agent_gateway_package_barrel_imports() -> None:
+    """Disallow `from app.services.agent_gateway import ...` in backend code."""
     repo_root = Path(__file__).resolve().parents[2]
     backend_root = repo_root / "backend"
     scan_roots = (backend_root / "app", backend_root / "tests")
@@ -22,11 +22,11 @@ def test_no_openclaw_package_barrel_imports() -> None:
                 path.read_text(encoding="utf-8").splitlines(), start=1
             ):
                 line = raw_line.strip()
-                if line.startswith("from app.services.openclaw import "):
+                if line.startswith("from app.services.agent_gateway import "):
                     violations.append(f"{rel}:{lineno}")
 
     assert not violations, (
-        "Use concrete OpenClaw modules (for example "
-        "`from app.services.openclaw.provisioning_db import ...`) instead of package imports. "
+        "Use concrete mawaDao Agent modules (for example "
+        "`from app.services.agent_gateway.provisioning_db import ...`) instead of package imports. "
         f"Violations: {', '.join(violations)}"
     )

@@ -5,11 +5,11 @@ from __future__ import annotations
 from app.core.logging import TRACE_LEVEL
 from app.models.board_onboarding import BoardOnboardingSession
 from app.models.boards import Board
-from app.services.openclaw.coordination_service import AbstractGatewayMessagingService
-from app.services.openclaw.exceptions import GatewayOperation, map_gateway_error_to_http_exception
-from app.services.openclaw.gateway_dispatch import GatewayDispatchService
-from app.services.openclaw.gateway_rpc import OpenClawGatewayError
-from app.services.openclaw.shared import GatewayAgentIdentity
+from app.services.agent_gateway.coordination_service import AbstractGatewayMessagingService
+from app.services.agent_gateway.exceptions import GatewayOperation, map_gateway_error_to_http_exception
+from app.services.agent_gateway.gateway_dispatch import GatewayDispatchService
+from app.services.agent_gateway.gateway_rpc import AgentGatewayError
+from app.services.agent_gateway.shared import GatewayAgentIdentity
 
 
 class BoardOnboardingMessagingService(AbstractGatewayMessagingService):
@@ -43,7 +43,7 @@ class BoardOnboardingMessagingService(AbstractGatewayMessagingService):
                 message=prompt,
                 deliver=False,
             )
-        except (OpenClawGatewayError, TimeoutError) as exc:
+        except (AgentGatewayError, TimeoutError) as exc:
             self.logger.error(
                 "gateway.onboarding.start_dispatch.failed trace_id=%s board_id=%s error=%s",
                 trace_id,
@@ -101,7 +101,7 @@ class BoardOnboardingMessagingService(AbstractGatewayMessagingService):
                 message=answer_text,
                 deliver=False,
             )
-        except (OpenClawGatewayError, TimeoutError) as exc:
+        except (AgentGatewayError, TimeoutError) as exc:
             self.logger.error(
                 "gateway.onboarding.answer_dispatch.failed trace_id=%s board_id=%s "
                 "onboarding_id=%s error=%s",

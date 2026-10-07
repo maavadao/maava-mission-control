@@ -10,9 +10,9 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi import HTTPException, status
 
-import app.services.openclaw.provisioning_db as agent_service
+import app.services.agent_gateway.provisioning_db as agent_service
 from app.models.board_webhooks import BoardWebhook
-from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.agent_gateway.gateway_rpc import GatewayConfig as GatewayClientConfig
 
 
 @dataclass
@@ -122,7 +122,7 @@ async def test_delete_agent_as_lead_removes_board_agent(
     monkeypatch.setattr(service, "require_board", _fake_require_board)
     monkeypatch.setattr(service, "require_gateway", _fake_require_gateway)
     monkeypatch.setattr(
-        agent_service.OpenClawGatewayProvisioner,
+        agent_service.AgentGatewayProvisioner,
         "delete_agent_lifecycle",
         _fake_delete_agent_lifecycle,
     )

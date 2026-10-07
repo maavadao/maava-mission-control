@@ -1,4 +1,4 @@
-"""Agent key derivation helpers shared across OpenClaw modules."""
+"""Agent key derivation helpers shared across mawaDao Agent modules."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import re
 from uuid import uuid4
 
 from app.models.agents import Agent
-from app.services.openclaw.constants import _SESSION_KEY_PARTS_MIN
+from app.services.agent_gateway.constants import _SESSION_KEY_PARTS_MIN
 
 
 def slugify(value: str) -> str:

@@ -1,7 +1,7 @@
 """DB-backed gateway resolution helpers.
 
 This module is the narrow boundary between Mission Control's DB models and the
-DB-free OpenClaw gateway client/provisioning layers.
+DB-free mawaDao Agent gateway client/provisioning layers.
 
 Goals:
 - Centralize "board -> gateway row" resolution and defensive org checks.
@@ -17,7 +17,7 @@ from fastapi import HTTPException, status
 
 from app.models.boards import Board
 from app.models.gateways import Gateway
-from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.agent_gateway.gateway_rpc import GatewayConfig as GatewayClientConfig
 
 if TYPE_CHECKING:
     from sqlmodel.ext.asyncio.session import AsyncSession

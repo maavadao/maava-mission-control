@@ -19,8 +19,8 @@ from app.schemas.gateway_api import (
     GatewaySessionsResponse,
     GatewaysStatusResponse,
 )
-from app.services.openclaw.gateway_rpc import GATEWAY_EVENTS, GATEWAY_METHODS, PROTOCOL_VERSION
-from app.services.openclaw.session_service import GatewaySessionService
+from app.services.agent_gateway.gateway_rpc import GATEWAY_EVENTS, GATEWAY_METHODS, PROTOCOL_VERSION
+from app.services.agent_gateway.session_service import GatewaySessionService
 from app.services.organizations import OrganizationContext
 
 if TYPE_CHECKING:

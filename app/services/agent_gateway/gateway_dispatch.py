@@ -1,6 +1,6 @@
 """DB-backed gateway config resolution and message dispatch helpers.
 
-This module exists to keep `app.api.*` thin: APIs should call OpenClaw services, not
+This module exists to keep `app.api.*` thin: APIs should call mawaDao Agent services, not
 directly orchestrate gateway RPC calls.
 """
 
@@ -10,18 +10,18 @@ from uuid import uuid4
 
 from app.models.boards import Board
 from app.models.gateways import Gateway
-from app.services.openclaw.db_service import OpenClawDBService
-from app.services.openclaw.gateway_resolver import (
+from app.services.agent_gateway.db_service import AgentDBService
+from app.services.agent_gateway.gateway_resolver import (
     gateway_client_config,
     get_gateway_for_board,
     optional_gateway_client_config,
     require_gateway_for_board,
 )
-from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
-from app.services.openclaw.gateway_rpc import OpenClawGatewayError, ensure_session, send_message
+from app.services.agent_gateway.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.agent_gateway.gateway_rpc import AgentGatewayError, ensure_session, send_message
 
 
-class GatewayDispatchService(OpenClawDBService):
+class GatewayDispatchService(AgentDBService):
     """Resolve gateway config for boards and dispatch messages to agent sessions."""
 
     async def optional_gateway_config_for_board(
@@ -58,7 +58,7 @@ class GatewayDispatchService(OpenClawDBService):
         agent_name: str,
         message: str,
         deliver: bool = False,
-    ) -> OpenClawGatewayError | None:
+    ) -> AgentGatewayError | None:
         try:
             await self.send_agent_message(
                 session_key=session_key,
@@ -67,7 +67,7 @@ class GatewayDispatchService(OpenClawDBService):
                 message=message,
                 deliver=deliver,
             )
-        except OpenClawGatewayError as exc:
+        except AgentGatewayError as exc:
             return exc
         return None
 

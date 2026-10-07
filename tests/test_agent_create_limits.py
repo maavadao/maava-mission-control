@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi import HTTPException, status
 
-import app.services.openclaw.provisioning_db as agent_service
+import app.services.agent_gateway.provisioning_db as agent_service
 from app.schemas.agents import AgentCreate
 
 

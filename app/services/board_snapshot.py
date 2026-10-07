@@ -16,7 +16,7 @@ from app.schemas.board_memory import BoardMemoryRead
 from app.schemas.boards import BoardRead
 from app.schemas.view_models import BoardSnapshot, TaskCardRead
 from app.services.approval_task_links import load_task_ids_by_approval, task_counts_for_board
-from app.services.openclaw.provisioning_db import AgentLifecycleService
+from app.services.agent_gateway.provisioning_db import AgentLifecycleService
 from app.services.tags import TagState, load_tag_state
 from app.services.task_dependencies import (
     blocked_by_dependency_ids,

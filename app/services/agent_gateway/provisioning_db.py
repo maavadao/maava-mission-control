@@ -1,7 +1,7 @@
-"""DB-backed OpenClaw orchestration and agent lifecycle services.
+"""DB-backed mawaDao Agent orchestration and agent lifecycle services.
 
 Layering:
-- `app.services.openclaw.provisioning` contains gateway-only lifecycle operations (no DB calls).
+- `app.services.agent_gateway.provisioning` contains gateway-only lifecycle operations (no DB calls).
 - This module builds on top of that layer using AsyncSession for token rotation, lead-agent records,
   bulk template synchronization, and API-facing agent lifecycle flows.
 """
@@ -46,39 +46,39 @@ from app.schemas.agents import (
 from app.schemas.common import OkResponse
 from app.schemas.gateways import GatewayTemplatesSyncError, GatewayTemplatesSyncResult
 from app.services.activity_log import record_activity
-from app.services.openclaw.constants import (
+from app.services.agent_gateway.constants import (
     _TOOLS_KV_RE,
     DEFAULT_HEARTBEAT_CONFIG,
     OFFLINE_AFTER,
 )
-from app.services.openclaw.db_agent_state import (
+from app.services.agent_gateway.db_agent_state import (
     mint_agent_token,
 )
-from app.services.openclaw.db_service import OpenClawDBService
-from app.services.openclaw.gateway_resolver import (
+from app.services.agent_gateway.db_service import AgentDBService
+from app.services.agent_gateway.gateway_resolver import (
     gateway_client_config,
     optional_gateway_client_config,
     require_gateway_for_board,
 )
-from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
-from app.services.openclaw.gateway_rpc import (
-    OpenClawGatewayError,
+from app.services.agent_gateway.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.agent_gateway.gateway_rpc import (
+    AgentGatewayError,
     ensure_session,
     send_message,
 )
-from app.services.openclaw.internal.agent_key import agent_key as _agent_key
-from app.services.openclaw.internal.retry import GatewayBackoff
-from app.services.openclaw.internal.session_keys import (
+from app.services.agent_gateway.internal.agent_key import agent_key as _agent_key
+from app.services.agent_gateway.internal.retry import GatewayBackoff
+from app.services.agent_gateway.internal.session_keys import (
     board_agent_session_key,
     board_lead_session_key,
 )
-from app.services.openclaw.lifecycle_orchestrator import AgentLifecycleOrchestrator
-from app.services.openclaw.policies import OpenClawAuthorizationPolicy
-from app.services.openclaw.provisioning import (
-    OpenClawGatewayControlPlane,
-    OpenClawGatewayProvisioner,
+from app.services.agent_gateway.lifecycle_orchestrator import AgentLifecycleOrchestrator
+from app.services.agent_gateway.policies import AgentAuthorizationPolicy
+from app.services.agent_gateway.provisioning import (
+    AgentGatewayControlPlane,
+    AgentGatewayProvisioner,
 )
-from app.services.openclaw.shared import GatewayAgentIdentity
+from app.services.agent_gateway.shared import GatewayAgentIdentity
 from app.services.organizations import (
     OrganizationContext,
     get_active_membership,
@@ -137,7 +137,7 @@ class LeadAgentRequest:
     options: LeadAgentOptions = field(default_factory=LeadAgentOptions)
 
 
-class OpenClawProvisioningService(OpenClawDBService):
+class AgentProvisioningService(AgentDBService):
     """DB-backed provisioning workflows (bulk template sync, lead-agent record)."""
 
     def __init__(self, session: AsyncSession) -> None:
@@ -282,7 +282,7 @@ class OpenClawProvisioningService(OpenClawDBService):
             )
             return result
 
-        control_plane = OpenClawGatewayControlPlane(
+        control_plane = AgentGatewayControlPlane(
             GatewayClientConfig(
                 url=gateway.url,
                 token=gateway.token,
@@ -346,7 +346,7 @@ class OpenClawProvisioningService(OpenClawDBService):
 class _SyncContext:
     session: AsyncSession
     gateway: Gateway
-    control_plane: OpenClawGatewayControlPlane
+    control_plane: AgentGatewayControlPlane
     backoff: GatewayBackoff
     options: GatewayTemplateSyncOptions
 
@@ -368,7 +368,7 @@ async def _get_agent_file(
     *,
     agent_gateway_id: str,
     name: str,
-    control_plane: OpenClawGatewayControlPlane,
+    control_plane: AgentGatewayControlPlane,
     backoff: GatewayBackoff | None = None,
 ) -> str | None:
     try:
@@ -377,7 +377,7 @@ async def _get_agent_file(
             return await control_plane.get_agent_file_payload(agent_id=agent_gateway_id, name=name)
 
         payload = await (backoff.run(_do_get) if backoff else _do_get())
-    except OpenClawGatewayError:
+    except AgentGatewayError:
         return None
     if isinstance(payload, str):
         return payload
@@ -396,7 +396,7 @@ async def _get_agent_file(
 async def _get_existing_auth_token(
     *,
     agent_gateway_id: str,
-    control_plane: OpenClawGatewayControlPlane,
+    control_plane: AgentGatewayControlPlane,
     backoff: GatewayBackoff | None = None,
 ) -> str | None:
     tools = await _get_agent_file(
@@ -471,7 +471,7 @@ async def _ping_gateway(ctx: _SyncContext, result: GatewayTemplatesSyncResult) -
             return await ctx.control_plane.health()
 
         await ctx.backoff.run(_do_ping)
-    except (TimeoutError, OpenClawGatewayError) as exc:
+    except (TimeoutError, AgentGatewayError) as exc:
         _append_sync_error(result, message=str(exc))
         return False
     else:
@@ -598,7 +598,7 @@ async def _sync_one_agent(
                 )
             except HTTPException as exc:
                 if exc.status_code == status.HTTP_502_BAD_GATEWAY:
-                    raise OpenClawGatewayError(str(exc.detail)) from exc
+                    raise AgentGatewayError(str(exc.detail)) from exc
                 raise
             return True
 
@@ -686,7 +686,7 @@ async def _sync_main_agent(
                 )
             except HTTPException as exc:
                 if exc.status_code == status.HTTP_502_BAD_GATEWAY:
-                    raise OpenClawGatewayError(str(exc.detail)) from exc
+                    raise AgentGatewayError(str(exc.detail)) from exc
                 raise
             return True
 
@@ -747,7 +747,7 @@ class AgentUpdateProvisionRequest:
     force_bootstrap: bool
 
 
-class AgentLifecycleService(OpenClawDBService):
+class AgentLifecycleService(AgentDBService):
     """Async service encapsulating agent lifecycle behavior for API routes."""
 
     def __init__(self, session: AsyncSession) -> None:
@@ -914,16 +914,16 @@ class AgentLifecycleService(OpenClawDBService):
         write: bool,
     ) -> None:
         if agent.board_id is None:
-            OpenClawAuthorizationPolicy.require_org_admin(is_admin=is_org_admin(ctx.member))
+            AgentAuthorizationPolicy.require_org_admin(is_admin=is_org_admin(ctx.member))
             gateway = await self.get_main_agent_gateway(agent)
-            OpenClawAuthorizationPolicy.require_gateway_in_org(
+            AgentAuthorizationPolicy.require_gateway_in_org(
                 gateway=gateway,
                 organization_id=ctx.organization.id,
             )
             return
 
         board = await Board.objects.by_id(agent.board_id).first(self.session)
-        board = OpenClawAuthorizationPolicy.require_board_in_org(
+        board = AgentAuthorizationPolicy.require_board_in_org(
             board=board,
             organization_id=ctx.organization.id,
         )
@@ -933,7 +933,7 @@ class AgentLifecycleService(OpenClawDBService):
             board=board,
             write=write,
         )
-        OpenClawAuthorizationPolicy.require_board_write_access(allowed=allowed)
+        AgentAuthorizationPolicy.require_board_write_access(allowed=allowed)
 
     @staticmethod
     def record_heartbeat(session: AsyncSession, agent: Agent) -> None:
@@ -968,11 +968,11 @@ class AgentLifecycleService(OpenClawDBService):
     ) -> AgentCreate:
         if actor.actor_type == "user":
             ctx = await self.require_user_context(actor.user)
-            OpenClawAuthorizationPolicy.require_org_admin(is_admin=is_org_admin(ctx.member))
+            AgentAuthorizationPolicy.require_org_admin(is_admin=is_org_admin(ctx.member))
             return payload
 
         if actor.actor_type == "agent":
-            board_id = OpenClawAuthorizationPolicy.resolve_board_lead_create_board_id(
+            board_id = AgentAuthorizationPolicy.resolve_board_lead_create_board_id(
                 actor_agent=actor.agent,
                 requested_board_id=payload.board_id,
             )
@@ -1185,7 +1185,7 @@ class AgentLifecycleService(OpenClawDBService):
         make_main: bool | None,
     ) -> None:
         if make_main:
-            OpenClawAuthorizationPolicy.require_org_admin(is_admin=is_org_admin(ctx.member))
+            AgentAuthorizationPolicy.require_org_admin(is_admin=is_org_admin(ctx.member))
         if "status" in updates:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -1193,7 +1193,7 @@ class AgentLifecycleService(OpenClawDBService):
             )
         if "board_id" in updates and updates["board_id"] is not None:
             new_board = await self.require_board(updates["board_id"])
-            OpenClawAuthorizationPolicy.require_board_in_org(
+            AgentAuthorizationPolicy.require_board_in_org(
                 board=new_board,
                 organization_id=ctx.organization.id,
             )
@@ -1203,7 +1203,7 @@ class AgentLifecycleService(OpenClawDBService):
                 board=new_board,
                 write=True,
             )
-            OpenClawAuthorizationPolicy.require_board_write_access(allowed=allowed)
+            AgentAuthorizationPolicy.require_board_write_access(allowed=allowed)
 
     async def apply_agent_update_mutations(
         self,
@@ -1352,7 +1352,7 @@ class AgentLifecycleService(OpenClawDBService):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         if actor.actor_type == "user":
             ctx = await self.require_user_context(actor.user)
-            OpenClawAuthorizationPolicy.require_org_admin(is_admin=is_org_admin(ctx.member))
+            AgentAuthorizationPolicy.require_org_admin(is_admin=is_org_admin(ctx.member))
 
         board = await self.require_board(
             payload.board_id,
@@ -1455,7 +1455,7 @@ class AgentLifecycleService(OpenClawDBService):
     ) -> LimitOffsetPage[AgentRead]:
         board_ids = await list_accessible_board_ids(self.session, member=ctx.member, write=False)
         if board_id is not None:
-            OpenClawAuthorizationPolicy.require_board_write_access(
+            AgentAuthorizationPolicy.require_board_write_access(
                 allowed=board_id in set(board_ids),
             )
         base_filters: list[ColumnElement[bool]] = []
@@ -1511,7 +1511,7 @@ class AgentLifecycleService(OpenClawDBService):
         board_ids = await list_accessible_board_ids(self.session, member=ctx.member, write=False)
         allowed_ids = set(board_ids)
         if board_id is not None:
-            OpenClawAuthorizationPolicy.require_board_write_access(allowed=board_id in allowed_ids)
+            AgentAuthorizationPolicy.require_board_write_access(allowed=board_id in allowed_ids)
 
         async def event_generator() -> AsyncIterator[dict[str, str]]:
             nonlocal last_seen
@@ -1664,13 +1664,13 @@ class AgentLifecycleService(OpenClawDBService):
         if agent is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         if actor.actor_type == "agent":
-            OpenClawAuthorizationPolicy.require_same_agent_actor(
+            AgentAuthorizationPolicy.require_same_agent_actor(
                 actor_agent_id=actor.agent.id if actor.agent else None,
                 target_agent_id=agent.id,
             )
         if actor.actor_type == "user":
             ctx = await self.require_user_context(actor.user)
-            OpenClawAuthorizationPolicy.require_org_admin(is_admin=is_org_admin(ctx.member))
+            AgentAuthorizationPolicy.require_org_admin(is_admin=is_org_admin(ctx.member))
             await self.require_agent_access(agent=agent, ctx=ctx, write=True)
         return await self.commit_heartbeat(
             agent=agent,
@@ -1709,7 +1709,7 @@ class AgentLifecycleService(OpenClawDBService):
                 user=actor.user,
             )
         elif actor.actor_type == "agent":
-            OpenClawAuthorizationPolicy.require_same_agent_actor(
+            AgentAuthorizationPolicy.require_same_agent_actor(
                 actor_agent_id=actor.agent.id if actor.agent else None,
                 target_agent_id=agent.id,
             )
@@ -1744,7 +1744,7 @@ class AgentLifecycleService(OpenClawDBService):
     ) -> OkResponse:
         """Delete a board-scoped agent as the board lead."""
         self.logger.log(TRACE_LEVEL, "agent.delete.lead.start agent_id=%s", agent_id)
-        lead = OpenClawAuthorizationPolicy.require_board_lead_actor(
+        lead = AgentAuthorizationPolicy.require_board_lead_actor(
             actor_agent=actor_agent,
             detail="Only board leads can delete agents",
         )
@@ -1757,7 +1757,7 @@ class AgentLifecycleService(OpenClawDBService):
                 detail="Board leads cannot delete gateway main agents",
             )
         board = await self.require_board(lead.board_id)
-        OpenClawAuthorizationPolicy.require_board_agent_target(target=agent, board=board)
+        AgentAuthorizationPolicy.require_board_agent_target(target=agent, board=board)
         if agent.is_board_lead:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -1776,11 +1776,11 @@ class AgentLifecycleService(OpenClawDBService):
             client_config = optional_gateway_client_config(gateway)
             if gateway is not None and client_config is not None:
                 try:
-                    workspace_path = await OpenClawGatewayProvisioner().delete_agent_lifecycle(
+                    workspace_path = await AgentGatewayProvisioner().delete_agent_lifecycle(
                         agent=agent,
                         gateway=gateway,
                     )
-                except OpenClawGatewayError as exc:
+                except AgentGatewayError as exc:
                     self.record_instruction_failure(self.session, agent, str(exc), "delete")
                     await self.session.commit()
                     raise HTTPException(
@@ -1798,11 +1798,11 @@ class AgentLifecycleService(OpenClawDBService):
             board = await self.require_board(str(agent.board_id))
             gateway, client_config = await self.require_gateway(board)
             try:
-                workspace_path = await OpenClawGatewayProvisioner().delete_agent_lifecycle(
+                workspace_path = await AgentGatewayProvisioner().delete_agent_lifecycle(
                     agent=agent,
                     gateway=gateway,
                 )
-            except OpenClawGatewayError as exc:
+            except AgentGatewayError as exc:
                 self.record_instruction_failure(self.session, agent, str(exc), "delete")
                 await self.session.commit()
                 raise HTTPException(
@@ -1893,7 +1893,7 @@ class AgentLifecycleService(OpenClawDBService):
                     config=client_config,
                     deliver=False,
                 )
-        except (OSError, OpenClawGatewayError, ValueError):
+        except (OSError, AgentGatewayError, ValueError):
             pass
         self.logger.info("agent.delete.success agent_id=%s", agent.id)
         return OkResponse()

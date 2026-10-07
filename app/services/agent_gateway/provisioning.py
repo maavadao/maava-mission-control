@@ -1,8 +1,8 @@
 """Gateway-only provisioning and lifecycle orchestration.
 
-This module is the low-level layer that talks to the OpenClaw gateway RPC surface.
+This module is the low-level layer that talks to the mawaDao Agent gateway RPC surface.
 DB-backed workflows (template sync, lead-agent record creation) live in
-`app.services.openclaw.provisioning_db`.
+`app.services.agent_gateway.provisioning_db`.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from app.models.agents import Agent
 from app.models.boards import Board
 from app.models.gateways import Gateway
 from app.services import souls_directory
-from app.services.openclaw.constants import (
+from app.services.agent_gateway.constants import (
     BOARD_SHARED_TEMPLATE_MAP,
     DEFAULT_CHANNEL_HEARTBEAT_VISIBILITY,
     DEFAULT_GATEWAY_FILES,
@@ -38,20 +38,20 @@ from app.services.openclaw.constants import (
     MAIN_TEMPLATE_MAP,
     PRESERVE_AGENT_EDITABLE_FILES,
 )
-from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
-from app.services.openclaw.gateway_rpc import (
-    OpenClawGatewayError,
+from app.services.agent_gateway.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.agent_gateway.gateway_rpc import (
+    AgentGatewayError,
     ensure_session,
-    openclaw_call,
+    gateway_call,
     send_message,
 )
-from app.services.openclaw.internal.agent_key import agent_key as _agent_key
-from app.services.openclaw.internal.agent_key import slugify
-from app.services.openclaw.internal.session_keys import (
+from app.services.agent_gateway.internal.agent_key import agent_key as _agent_key
+from app.services.agent_gateway.internal.agent_key import slugify
+from app.services.agent_gateway.internal.session_keys import (
     board_agent_session_key,
     board_lead_session_key,
 )
-from app.services.openclaw.shared import GatewayAgentIdentity
+from app.services.agent_gateway.shared import GatewayAgentIdentity
 
 if TYPE_CHECKING:
     from app.models.users import User
@@ -72,7 +72,7 @@ _ROLE_SOUL_MAX_CHARS = 24_000
 _ROLE_SOUL_WORD_RE = re.compile(r"[a-z0-9]+")
 
 
-def _is_missing_session_error(exc: OpenClawGatewayError) -> bool:
+def _is_missing_session_error(exc: AgentGatewayError) -> bool:
     message = str(exc).lower()
     if not message:
         return False
@@ -87,7 +87,7 @@ def _is_missing_session_error(exc: OpenClawGatewayError) -> bool:
     )
 
 
-def _is_missing_agent_error(exc: OpenClawGatewayError) -> bool:
+def _is_missing_agent_error(exc: AgentGatewayError) -> bool:
     message = str(exc).lower()
     if not message:
         return False
@@ -549,14 +549,14 @@ class GatewayControlPlane(ABC):
         raise NotImplementedError
 
 
-class OpenClawGatewayControlPlane(GatewayControlPlane):
-    """OpenClaw gateway RPC implementation of the lifecycle control-plane contract."""
+class AgentGatewayControlPlane(GatewayControlPlane):
+    """mawaDao Agent gateway RPC implementation of the lifecycle control-plane contract."""
 
     def __init__(self, config: GatewayClientConfig) -> None:
         self._config = config
 
     async def health(self) -> object:
-        return await openclaw_call("health", config=self._config)
+        return await gateway_call("health", config=self._config)
 
     async def ensure_agent_session(self, session_key: str, *, label: str | None = None) -> None:
         if not session_key:
@@ -566,12 +566,12 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
     async def reset_agent_session(self, session_key: str) -> None:
         if not session_key:
             return
-        await openclaw_call("sessions.reset", {"key": session_key}, config=self._config)
+        await gateway_call("sessions.reset", {"key": session_key}, config=self._config)
 
     async def delete_agent_session(self, session_key: str) -> None:
         if not session_key:
             return
-        await openclaw_call("sessions.delete", {"key": session_key}, config=self._config)
+        await gateway_call("sessions.delete", {"key": session_key}, config=self._config)
 
     async def upsert_agent(self, registration: GatewayAgentRegistration) -> None:
         # Prefer an idempotent "create then update" flow.
@@ -579,7 +579,7 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
         # - Ensures we always hit the "create" RPC first, per lifecycle expectations.
         agent_just_created = False
         try:
-            await openclaw_call(
+            await gateway_call(
                 "agents.create",
                 {
                     "name": registration.agent_id,
@@ -588,7 +588,7 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
                 config=self._config,
             )
             agent_just_created = True
-        except OpenClawGatewayError as exc:
+        except AgentGatewayError as exc:
             message = str(exc).lower()
             if not any(
                 marker in message for marker in ("already", "exist", "duplicate", "conflict")
@@ -607,7 +607,7 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
         _update_delay = 0.5
         for _attempt in range(_update_retries):
             try:
-                await openclaw_call(
+                await gateway_call(
                     "agents.update",
                     {
                         "agentId": registration.agent_id,
@@ -617,7 +617,7 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
                     config=self._config,
                 )
                 break
-            except OpenClawGatewayError as exc:
+            except AgentGatewayError as exc:
                 should_retry = (
                     agent_just_created
                     and _is_missing_agent_error(exc)
@@ -633,14 +633,14 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
         )
 
     async def delete_agent(self, agent_id: str, *, delete_files: bool = True) -> None:
-        await openclaw_call(
+        await gateway_call(
             "agents.delete",
             {"agentId": agent_id, "deleteFiles": delete_files},
             config=self._config,
         )
 
     async def list_agent_files(self, agent_id: str) -> dict[str, dict[str, Any]]:
-        payload = await openclaw_call(
+        payload = await gateway_call(
             "agents.files.list",
             {"agentId": agent_id},
             config=self._config,
@@ -662,21 +662,21 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
         return index
 
     async def get_agent_file_payload(self, *, agent_id: str, name: str) -> object:
-        return await openclaw_call(
+        return await gateway_call(
             "agents.files.get",
             {"agentId": agent_id, "name": name},
             config=self._config,
         )
 
     async def set_agent_file(self, *, agent_id: str, name: str, content: str) -> None:
-        await openclaw_call(
+        await gateway_call(
             "agents.files.set",
             {"agentId": agent_id, "name": name, "content": content},
             config=self._config,
         )
 
     async def delete_agent_file(self, *, agent_id: str, name: str) -> None:
-        await openclaw_call(
+        await gateway_call(
             "agents.files.delete",
             {"agentId": agent_id, "name": name},
             config=self._config,
@@ -707,27 +707,27 @@ class OpenClawGatewayControlPlane(GatewayControlPlane):
         params = {"raw": json.dumps(patch)}
         if base_hash:
             params["baseHash"] = base_hash
-        await openclaw_call("config.patch", params, config=self._config)
+        await gateway_call("config.patch", params, config=self._config)
 
 
 async def _gateway_config_agent_list(
     config: GatewayClientConfig,
 ) -> tuple[str | None, list[object], dict[str, Any]]:
-    cfg = await openclaw_call("config.get", config=config)
+    cfg = await gateway_call("config.get", config=config)
     if not isinstance(cfg, dict):
         msg = "config.get returned invalid payload"
-        raise OpenClawGatewayError(msg)
+        raise AgentGatewayError(msg)
 
     data = cfg.get("config") or cfg.get("parsed") or {}
     if not isinstance(data, dict):
         msg = "config.get returned invalid config"
-        raise OpenClawGatewayError(msg)
+        raise AgentGatewayError(msg)
 
     agents_section = data.get("agents") or {}
     agents_list = agents_section.get("list") or []
     if not isinstance(agents_list, list):
         msg = "config agents.list is not a list"
-        raise OpenClawGatewayError(msg)
+        raise AgentGatewayError(msg)
     return cfg.get("hash"), agents_list, data
 
 
@@ -856,7 +856,7 @@ class BaseAgentLifecycleManager(ABC):
                     name=name,
                     content=content,
                 )
-            except OpenClawGatewayError as exc:
+            except AgentGatewayError as exc:
                 if "unsupported file" in str(exc).lower():
                     unsupported_names.append(name)
                     continue
@@ -879,7 +879,7 @@ class BaseAgentLifecycleManager(ABC):
         for name in sorted(stale_names):
             try:
                 await self._control_plane.delete_agent_file(agent_id=agent_id, name=name)
-            except OpenClawGatewayError as exc:
+            except AgentGatewayError as exc:
                 message = str(exc).lower()
                 if any(
                     marker in message
@@ -1056,11 +1056,11 @@ class GatewayMainAgentLifecycleManager(BaseAgentLifecycleManager):
         return preserved
 
 
-def _control_plane_for_gateway(gateway: Gateway) -> OpenClawGatewayControlPlane:
+def _control_plane_for_gateway(gateway: Gateway) -> AgentGatewayControlPlane:
     if not gateway.url:
         msg = "Gateway url is required"
-        raise OpenClawGatewayError(msg)
-    return OpenClawGatewayControlPlane(
+        raise AgentGatewayError(msg)
+    return AgentGatewayControlPlane(
         GatewayClientConfig(
             url=gateway.url,
             token=gateway.token,
@@ -1105,14 +1105,14 @@ def _wakeup_text(agent: Agent, *, verb: str) -> str:
     )
 
 
-class OpenClawGatewayProvisioner:
+class AgentGatewayProvisioner:
     """Gateway-only agent lifecycle interface (create -> files -> wake)."""
 
     async def sync_gateway_agent_heartbeats(self, gateway: Gateway, agents: list[Agent]) -> None:
         """Sync current Agent.heartbeat_config values to the gateway config."""
         if not gateway.workspace_root:
             msg = "gateway workspace_root is required"
-            raise OpenClawGatewayError(msg)
+            raise AgentGatewayError(msg)
         entries: list[tuple[str, str, dict[str, Any]]] = []
         for agent in agents:
             agent_id = _agent_key(agent)
@@ -1188,7 +1188,7 @@ class OpenClawGatewayProvisioner:
         if reset_session:
             try:
                 await control_plane.reset_agent_session(session_key)
-            except OpenClawGatewayError as exc:
+            except AgentGatewayError as exc:
                 if not _is_missing_session_error(exc):
                     raise
 
@@ -1236,7 +1236,7 @@ class OpenClawGatewayProvisioner:
             agent_gateway_id = _agent_key(agent)
         try:
             await control_plane.delete_agent(agent_gateway_id, delete_files=delete_files)
-        except OpenClawGatewayError as exc:
+        except AgentGatewayError as exc:
             if not _is_missing_agent_error(exc):
                 raise
 
@@ -1250,7 +1250,7 @@ class OpenClawGatewayProvisioner:
             if session_key:
                 try:
                     await control_plane.delete_agent_session(session_key)
-                except OpenClawGatewayError as exc:
+                except AgentGatewayError as exc:
                     if not _is_missing_session_error(exc):
                         raise
 

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from app.services.openclaw.lifecycle_queue import TASK_TYPE as LIFECYCLE_TASK_TYPE
+from app.services.agent_gateway.lifecycle_queue import TASK_TYPE as LIFECYCLE_TASK_TYPE
 from app.services.queue_worker import _TASK_HANDLERS
 
 

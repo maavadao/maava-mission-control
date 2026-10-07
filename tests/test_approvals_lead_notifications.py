@@ -11,7 +11,7 @@ from app.models.agents import Agent
 from app.models.approvals import Approval
 from app.models.boards import Board
 from app.schemas.approvals import ApprovalRead, ApprovalUpdate
-from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.agent_gateway.gateway_rpc import GatewayConfig as GatewayClientConfig
 
 
 class _ByIdQuery:

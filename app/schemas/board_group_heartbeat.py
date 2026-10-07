@@ -13,7 +13,7 @@ RUNTIME_ANNOTATION_TYPES = (UUID,)
 class BoardGroupHeartbeatApply(SQLModel):
     """Request payload for heartbeat policy updates."""
 
-    # Heartbeat cadence string understood by the OpenClaw gateway
+    # Heartbeat cadence string understood by the mawaDao Agent gateway
     # (e.g. "2m", "10m", "30m").
     every: str
     include_board_leads: bool = False

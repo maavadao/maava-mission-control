@@ -1,1 +1,1 @@
-"""OpenClaw Mission Control backend application package."""
+"""mawaDao Agent Mission Control backend application package."""

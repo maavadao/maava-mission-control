@@ -1,4 +1,4 @@
-"""OpenClaw-compatible device identity and connect-signature helpers."""
+"""mawaDao Agent-compatible device identity and connect-signature helpers."""
 
 from __future__ import annotations
 
@@ -125,7 +125,7 @@ def load_or_create_device_identity() -> DeviceIdentity:
 
 
 def public_key_raw_base64url_from_pem(public_key_pem: str) -> str:
-    """Return raw Ed25519 public key in base64url form expected by OpenClaw."""
+    """Return raw Ed25519 public key in base64url form expected by mawaDao Agent."""
     return _base64url_encode(_derive_public_key_raw(public_key_pem))
 
 
@@ -150,7 +150,7 @@ def build_device_auth_payload(
     token: str | None,
     nonce: str | None,
 ) -> str:
-    """Build the OpenClaw canonical payload string for device signatures."""
+    """Build the mawaDao Agent canonical payload string for device signatures."""
     version = "v2" if nonce else "v1"
     parts = [
         version,

@@ -7,11 +7,11 @@ from dataclasses import dataclass
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.services.openclaw.gateway_rpc import (
+from app.services.agent_gateway.gateway_rpc import (
     GatewayConfig,
-    OpenClawGatewayError,
-    openclaw_call,
-    openclaw_connect_metadata,
+    AgentGatewayError,
+    gateway_call,
+    gateway_connect_metadata,
 )
 
 _CALVER_PATTERN = re.compile(
@@ -161,12 +161,12 @@ async def check_gateway_version_compatibility(
     minimum_version: str | None = None,
 ) -> GatewayVersionCheckResult:
     """Evaluate gateway compatibility using connect metadata with config fallback."""
-    connect_payload = await openclaw_connect_metadata(config=config)
+    connect_payload = await gateway_connect_metadata(config=config)
     current_version = extract_connect_server_version(connect_payload)
     if current_version is None or _parse_version_parts(current_version) is None:
         try:
-            config_payload = await openclaw_call("config.get", config=config)
-        except OpenClawGatewayError as exc:
+            config_payload = await gateway_call("config.get", config=config)
+        except AgentGatewayError as exc:
             logger.debug(
                 "gateway.compat.config_get_fallback_unavailable reason=%s",
                 str(exc),

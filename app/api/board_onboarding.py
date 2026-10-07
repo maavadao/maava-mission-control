@@ -32,14 +32,14 @@ from app.schemas.board_onboarding import (
     BoardOnboardingUserProfile,
 )
 from app.schemas.boards import BoardRead
-from app.services.openclaw.gateway_dispatch import GatewayDispatchService
-from app.services.openclaw.gateway_resolver import get_gateway_for_board
-from app.services.openclaw.onboarding_service import BoardOnboardingMessagingService
-from app.services.openclaw.policies import OpenClawAuthorizationPolicy
-from app.services.openclaw.provisioning_db import (
+from app.services.agent_gateway.gateway_dispatch import GatewayDispatchService
+from app.services.agent_gateway.gateway_resolver import get_gateway_for_board
+from app.services.agent_gateway.onboarding_service import BoardOnboardingMessagingService
+from app.services.agent_gateway.policies import AgentAuthorizationPolicy
+from app.services.agent_gateway.provisioning_db import (
     LeadAgentOptions,
     LeadAgentRequest,
-    OpenClawProvisioningService,
+    AgentProvisioningService,
 )
 
 if TYPE_CHECKING:
@@ -253,7 +253,7 @@ async def start_onboarding(
         '- If the user sends an "Additional context" message later, incorporate '
         "it and resend status=complete\n"
         "  to update the draft (until the user confirms).\n"
-        "Do NOT respond in OpenClaw chat.\n"
+        "Do NOT respond in mawaDao Agent chat.\n"
         "All onboarding responses MUST be sent to Mission Control via API.\n"
         f"Mission Control base URL: {base_url}\n"
         "Use the AUTH_TOKEN from USER.md or TOOLS.md and pass it as X-Agent-Token.\n"
@@ -367,11 +367,11 @@ async def agent_onboarding_update(
     if actor.actor_type != "agent" or actor.agent is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
     agent = actor.agent
-    OpenClawAuthorizationPolicy.require_gateway_scoped_actor(actor_agent=agent)
+    AgentAuthorizationPolicy.require_gateway_scoped_actor(actor_agent=agent)
 
     gateway = await get_gateway_for_board(session, board)
     if gateway is not None:
-        OpenClawAuthorizationPolicy.require_gateway_main_actor_binding(
+        AgentAuthorizationPolicy.require_gateway_main_actor_binding(
             actor_agent=agent,
             gateway=gateway,
         )
@@ -462,7 +462,7 @@ async def confirm_onboarding(
     session.add(onboarding)
     await session.commit()
     await session.refresh(board)
-    await OpenClawProvisioningService(session).ensure_board_lead_agent(
+    await AgentProvisioningService(session).ensure_board_lead_agent(
         request=LeadAgentRequest(
             board=board,
             gateway=gateway,

@@ -11,11 +11,11 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi import HTTPException, status
 
-import app.services.openclaw.coordination_service as coordination_lifecycle
-import app.services.openclaw.onboarding_service as onboarding_lifecycle
-from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
-from app.services.openclaw.gateway_rpc import OpenClawGatewayError
-from app.services.openclaw.shared import GatewayAgentIdentity
+import app.services.agent_gateway.coordination_service as coordination_lifecycle
+import app.services.agent_gateway.onboarding_service as onboarding_lifecycle
+from app.services.agent_gateway.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.agent_gateway.gateway_rpc import AgentGatewayError
+from app.services.agent_gateway.shared import GatewayAgentIdentity
 
 
 @dataclass
@@ -146,7 +146,7 @@ async def test_gateway_coordination_nudge_maps_gateway_error(
 
     async def _fake_send_agent_message(self, **_kwargs: Any) -> None:
         _ = self
-        raise OpenClawGatewayError("dial tcp: connection refused")
+        raise AgentGatewayError("dial tcp: connection refused")
 
     monkeypatch.setattr(
         coordination_lifecycle.GatewayCoordinationService,

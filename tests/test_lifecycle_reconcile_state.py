@@ -8,11 +8,11 @@ from uuid import uuid4
 
 from app.core.time import utcnow
 from app.models.agents import Agent
-from app.services.openclaw.constants import (
+from app.services.agent_gateway.constants import (
     CHECKIN_DEADLINE_AFTER_WAKE,
     MAX_WAKE_ATTEMPTS_WITHOUT_CHECKIN,
 )
-from app.services.openclaw.lifecycle_reconcile import _has_checked_in_since_wake
+from app.services.agent_gateway.lifecycle_reconcile import _has_checked_in_since_wake
 
 
 def _agent(*, last_seen_offset_s: int | None, last_wake_offset_s: int | None) -> Agent:

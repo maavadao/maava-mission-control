@@ -1,18 +1,18 @@
 """HTTP/JSON bridge client for per-tenant tenant-platform Cloud Run services.
 
-Mission Control natively talks to OpenClaw gateways using JSON-RPC v3 over
+Mission Control natively talks to mawaDao Agent gateways using JSON-RPC v3 over
 WebSocket. For multi-tenant deployments, however, each user has their own
 ``tenant-platform`` Cloud Run service that does NOT expose a WebSocket gateway
-— instead it exposes the same OpenClaw RPC methods over a thin HTTP/JSON
+— instead it exposes the same mawaDao Agent RPC methods over a thin HTTP/JSON
 bridge:
 
   - ``GET  {url}/healthz``                — liveness + protocol announcement
-  - ``POST {url}/api/v1/rpc/{method}``    — invoke any OpenClaw RPC method
+  - ``POST {url}/api/v1/rpc/{method}``    — invoke any mawaDao Agent RPC method
 
 This module performs that translation when ``GatewayConfig.integration_mode``
 is set to ``"rest_bridge"``. The contract mirrors the WebSocket flow: a
 successful response is unwrapped to its ``data`` payload, anything else raises
-``OpenClawGatewayError``.
+``AgentGatewayError``.
 
 The bridge endpoint is authenticated with the gateway's ``token`` value
 (forwarded as a JWT in the ``Authorization: Bearer`` header — tenant-platform
@@ -28,12 +28,12 @@ from urllib.parse import urlsplit, urlunsplit
 import httpx
 
 from app.core.logging import get_logger
-from app.services.openclaw.gateway_rpc import GatewayConfig, OpenClawGatewayError
+from app.services.agent_gateway.gateway_rpc import GatewayConfig, AgentGatewayError
 
 logger = get_logger(__name__)
 
 # Reasonable upper bound for a single bridge call (matches the worst-case
-# duration of long-running OpenClaw RPCs like ``status`` or ``models.list``).
+# duration of long-running mawaDao Agent RPCs like ``status`` or ``models.list``).
 _DEFAULT_TIMEOUT_SECONDS = 30.0
 # A single fast probe used by the version compatibility check.
 _HEALTH_TIMEOUT_SECONDS = 10.0
@@ -52,7 +52,7 @@ def _normalize_base_url(raw_url: str) -> str:
     base = (raw_url or "").strip()
     if not base:
         message = "Gateway URL is not configured."
-        raise OpenClawGatewayError(message)
+        raise AgentGatewayError(message)
 
     parsed = urlsplit(base)
     scheme = parsed.scheme.lower()
@@ -93,7 +93,7 @@ def _unwrap_payload(method: str, body: object) -> object:
     if isinstance(body, dict):
         if body.get("success") is False:
             err = body.get("error") or body.get("message") or "RPC call failed"
-            raise OpenClawGatewayError(f"gateway.rpc.{method}: {err}")
+            raise AgentGatewayError(f"gateway.rpc.{method}: {err}")
         if "data" in body:
             return body["data"]
     return body
@@ -105,7 +105,7 @@ async def rest_bridge_call(
     *,
     config: GatewayConfig,
 ) -> object:
-    """Invoke an OpenClaw RPC method against the tenant-platform REST bridge."""
+    """Invoke a mawaDao Agent RPC method against the tenant-platform REST bridge."""
     base_url = _normalize_base_url(config.url)
     url = f"{base_url}/api/v1/rpc/{method}"
     payload = {"params": params or {}}
@@ -119,7 +119,7 @@ async def rest_bridge_call(
                 method,
                 exc.__class__.__name__,
             )
-            raise OpenClawGatewayError(str(exc)) from exc
+            raise AgentGatewayError(str(exc)) from exc
 
     if response.status_code >= 400:
         # Try to surface the bridge's structured error message for easier debugging.
@@ -133,14 +133,14 @@ async def rest_bridge_call(
             response.status_code,
             err_body,
         )
-        raise OpenClawGatewayError(
+        raise AgentGatewayError(
             f"REST bridge {method} failed with HTTP {response.status_code}: {err_body!r}",
         )
 
     try:
         body = response.json()
     except (ValueError, json.JSONDecodeError) as exc:
-        raise OpenClawGatewayError(
+        raise AgentGatewayError(
             f"REST bridge {method} returned non-JSON body",
         ) from exc
 
@@ -161,10 +161,10 @@ async def rest_bridge_connect_metadata(*, config: GatewayConfig) -> dict[str, ob
         try:
             response = await client.get(url, headers=_bearer_headers(config))
         except httpx.HTTPError as exc:  # pragma: no cover - network errors
-            raise OpenClawGatewayError(str(exc)) from exc
+            raise AgentGatewayError(str(exc)) from exc
 
     if response.status_code >= 400:
-        raise OpenClawGatewayError(
+        raise AgentGatewayError(
             f"REST bridge healthz failed with HTTP {response.status_code}",
         )
 

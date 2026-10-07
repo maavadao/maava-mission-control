@@ -28,8 +28,8 @@ from app.models.board_memory import BoardMemory
 from app.schemas.board_memory import BoardMemoryCreate, BoardMemoryRead
 from app.schemas.pagination import DefaultLimitOffsetPage
 from app.services.mentions import extract_mentions, matches_agent_mention
-from app.services.openclaw.gateway_dispatch import GatewayDispatchService
-from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.agent_gateway.gateway_dispatch import GatewayDispatchService
+from app.services.agent_gateway.gateway_rpc import GatewayConfig as GatewayClientConfig
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator

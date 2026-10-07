@@ -1,4 +1,4 @@
-"""OpenClaw authorization policy primitives."""
+"""mawaDao Agent authorization policy primitives."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 
-from app.services.openclaw.shared import GatewayAgentIdentity
+from app.services.agent_gateway.shared import GatewayAgentIdentity
 
 if TYPE_CHECKING:
     from app.models.agents import Agent
@@ -15,8 +15,8 @@ if TYPE_CHECKING:
     from app.models.gateways import Gateway
 
 
-class OpenClawAuthorizationPolicy:
-    """Centralized authz checks for OpenClaw lifecycle and coordination actions."""
+class AgentAuthorizationPolicy:
+    """Centralized authz checks for mawaDao Agent lifecycle and coordination actions."""
 
     _GATEWAY_MAIN_ONLY_DETAIL = "Only the dedicated gateway agent may call this endpoint."
 

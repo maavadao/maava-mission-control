@@ -6,14 +6,14 @@ from uuid import uuid4
 import pytest
 from fastapi import HTTPException
 
-import app.services.openclaw.admin_service as admin_service
-import app.services.openclaw.gateway_compat as gateway_compat
-import app.services.openclaw.session_service as session_service
+import app.services.agent_gateway.admin_service as admin_service
+import app.services.agent_gateway.gateway_compat as gateway_compat
+import app.services.agent_gateway.session_service as session_service
 from app.schemas.gateway_api import GatewayResolveQuery
-from app.services.openclaw.admin_service import GatewayAdminLifecycleService
-from app.services.openclaw.gateway_compat import GatewayVersionCheckResult
-from app.services.openclaw.gateway_rpc import GatewayConfig, OpenClawGatewayError
-from app.services.openclaw.session_service import GatewaySessionService
+from app.services.agent_gateway.admin_service import GatewayAdminLifecycleService
+from app.services.agent_gateway.gateway_compat import GatewayVersionCheckResult
+from app.services.agent_gateway.gateway_rpc import GatewayConfig, AgentGatewayError
+from app.services.agent_gateway.session_service import GatewaySessionService
 
 
 def test_extract_connect_server_version_uses_server_version_as_source_of_truth() -> None:
@@ -119,12 +119,12 @@ async def test_check_gateway_version_compatibility_uses_connect_server_version_o
             "server": {"version": "2026.2.13"},
         }
 
-    async def _fake_openclaw_call(method: str, params: object = None, *, config: object) -> object:
+    async def _fake_gateway_call(method: str, params: object = None, *, config: object) -> object:
         _ = (method, params, config)
         raise AssertionError("config.get fallback should not run for valid connect version")
 
-    monkeypatch.setattr(gateway_compat, "openclaw_connect_metadata", _fake_connect_metadata)
-    monkeypatch.setattr(gateway_compat, "openclaw_call", _fake_openclaw_call)
+    monkeypatch.setattr(gateway_compat, "gateway_connect_metadata", _fake_connect_metadata)
+    monkeypatch.setattr(gateway_compat, "gateway_call", _fake_gateway_call)
 
     result = await gateway_compat.check_gateway_version_compatibility(
         GatewayConfig(url="ws://gateway.example/ws"),
@@ -143,13 +143,13 @@ async def test_check_gateway_version_compatibility_fails_without_server_version(
         _ = config
         return {"runtime": {"version": "2026.2.13"}}
 
-    async def _fake_openclaw_call(method: str, params: object = None, *, config: object) -> object:
+    async def _fake_gateway_call(method: str, params: object = None, *, config: object) -> object:
         _ = (params, config)
         assert method == "config.get"
         return {"config": {}}
 
-    monkeypatch.setattr(gateway_compat, "openclaw_connect_metadata", _fake_connect_metadata)
-    monkeypatch.setattr(gateway_compat, "openclaw_call", _fake_openclaw_call)
+    monkeypatch.setattr(gateway_compat, "gateway_connect_metadata", _fake_connect_metadata)
+    monkeypatch.setattr(gateway_compat, "gateway_call", _fake_gateway_call)
 
     result = await gateway_compat.check_gateway_version_compatibility(
         GatewayConfig(url="ws://gateway.example/ws"),
@@ -169,13 +169,13 @@ async def test_check_gateway_version_compatibility_uses_config_get_fallback_when
         _ = config
         return {"server": {"version": "dev"}}
 
-    async def _fake_openclaw_call(method: str, params: object = None, *, config: object) -> object:
+    async def _fake_gateway_call(method: str, params: object = None, *, config: object) -> object:
         _ = (params, config)
         assert method == "config.get"
         return {"config": {"meta": {"lastTouchedVersion": "2026.2.9"}}}
 
-    monkeypatch.setattr(gateway_compat, "openclaw_connect_metadata", _fake_connect_metadata)
-    monkeypatch.setattr(gateway_compat, "openclaw_call", _fake_openclaw_call)
+    monkeypatch.setattr(gateway_compat, "gateway_connect_metadata", _fake_connect_metadata)
+    monkeypatch.setattr(gateway_compat, "gateway_call", _fake_gateway_call)
 
     result = await gateway_compat.check_gateway_version_compatibility(
         GatewayConfig(url="ws://gateway.example/ws"),
@@ -194,12 +194,12 @@ async def test_check_gateway_version_compatibility_rejects_non_calver_server_ver
         _ = config
         return {"server": {"version": "dev"}}
 
-    async def _fake_openclaw_call(method: str, params: object = None, *, config: object) -> object:
+    async def _fake_gateway_call(method: str, params: object = None, *, config: object) -> object:
         _ = (method, params, config)
-        raise OpenClawGatewayError("method unavailable")
+        raise AgentGatewayError("method unavailable")
 
-    monkeypatch.setattr(gateway_compat, "openclaw_connect_metadata", _fake_connect_metadata)
-    monkeypatch.setattr(gateway_compat, "openclaw_call", _fake_openclaw_call)
+    monkeypatch.setattr(gateway_compat, "gateway_connect_metadata", _fake_connect_metadata)
+    monkeypatch.setattr(gateway_compat, "gateway_call", _fake_gateway_call)
 
     result = await gateway_compat.check_gateway_version_compatibility(
         GatewayConfig(url="ws://gateway.example/ws"),
@@ -217,11 +217,11 @@ async def test_check_gateway_version_compatibility_propagates_connect_errors(
 ) -> None:
     async def _fake_connect_metadata(*, config: GatewayConfig) -> object | None:
         _ = config
-        raise OpenClawGatewayError("connection refused")
+        raise AgentGatewayError("connection refused")
 
-    monkeypatch.setattr(gateway_compat, "openclaw_connect_metadata", _fake_connect_metadata)
+    monkeypatch.setattr(gateway_compat, "gateway_connect_metadata", _fake_connect_metadata)
 
-    with pytest.raises(OpenClawGatewayError, match="connection refused"):
+    with pytest.raises(AgentGatewayError, match="connection refused"):
         await gateway_compat.check_gateway_version_compatibility(
             GatewayConfig(url="ws://gateway.example/ws"),
             minimum_version="2026.1.30",
@@ -257,7 +257,7 @@ async def test_admin_service_maps_gateway_transport_errors(
 ) -> None:
     async def _fake_check(config: GatewayConfig, *, minimum_version: str | None = None) -> object:
         _ = (config, minimum_version)
-        raise OpenClawGatewayError("connection refused")
+        raise AgentGatewayError("connection refused")
 
     monkeypatch.setattr(admin_service, "check_gateway_version_compatibility", _fake_check)
 
@@ -275,7 +275,7 @@ async def test_admin_service_maps_gateway_scope_errors_with_guidance(
 ) -> None:
     async def _fake_check(config: GatewayConfig, *, minimum_version: str | None = None) -> object:
         _ = (config, minimum_version)
-        raise OpenClawGatewayError("missing scope: operator.read")
+        raise AgentGatewayError("missing scope: operator.read")
 
     monkeypatch.setattr(admin_service, "check_gateway_version_compatibility", _fake_check)
 
@@ -319,7 +319,7 @@ async def test_gateway_status_surfaces_scope_error_guidance(
 ) -> None:
     async def _fake_check(config: GatewayConfig, *, minimum_version: str | None = None) -> object:
         _ = (config, minimum_version)
-        raise OpenClawGatewayError("missing scope: operator.read")
+        raise AgentGatewayError("missing scope: operator.read")
 
     monkeypatch.setattr(session_service, "check_gateway_version_compatibility", _fake_check)
 
@@ -348,13 +348,13 @@ async def test_gateway_status_returns_sessions_when_version_compatible(
             message=None,
         )
 
-    async def _fake_openclaw_call(method: str, params: object = None, *, config: object) -> object:
+    async def _fake_gateway_call(method: str, params: object = None, *, config: object) -> object:
         _ = (params, config)
         assert method == "sessions.list"
         return {"sessions": [{"key": "agent:main"}]}
 
     monkeypatch.setattr(session_service, "check_gateway_version_compatibility", _fake_check)
-    monkeypatch.setattr(session_service, "openclaw_call", _fake_openclaw_call)
+    monkeypatch.setattr(session_service, "gateway_call", _fake_gateway_call)
 
     service = GatewaySessionService(session=object())  # type: ignore[arg-type]
     response = await service.get_status(

@@ -24,8 +24,8 @@ from app.schemas.gateways import (
     GatewayUpdate,
 )
 from app.schemas.pagination import DefaultLimitOffsetPage
-from app.services.openclaw.admin_service import GatewayAdminLifecycleService
-from app.services.openclaw.session_service import GatewayTemplateSyncQuery
+from app.services.agent_gateway.admin_service import GatewayAdminLifecycleService
+from app.services.agent_gateway.session_service import GatewayTemplateSyncQuery
 
 if TYPE_CHECKING:
     from fastapi_pagination.limit_offset import LimitOffsetPage

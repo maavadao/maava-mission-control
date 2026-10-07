@@ -13,7 +13,7 @@ import pytest
 import app.services.board_lifecycle as board_lifecycle
 from app.api import boards
 from app.models.boards import Board
-from app.services.openclaw.gateway_rpc import OpenClawGatewayError
+from app.services.agent_gateway.gateway_rpc import AgentGatewayError
 
 _NO_EXEC_RESULTS_ERROR = "No more exec_results left for session.exec"
 
@@ -133,7 +133,7 @@ async def test_delete_board_ignores_missing_gateway_agent(monkeypatch: pytest.Mo
     ) -> str | None:
         _ = (agent, gateway, delete_files, delete_session)
         called["delete_agent_lifecycle"] += 1
-        raise OpenClawGatewayError('agent "mc-worker" not found')
+        raise AgentGatewayError('agent "mc-worker" not found')
 
     monkeypatch.setattr(
         board_lifecycle.Agent,
@@ -147,7 +147,7 @@ async def test_delete_board_ignores_missing_gateway_agent(monkeypatch: pytest.Mo
     )
     monkeypatch.setattr(board_lifecycle, "gateway_client_config", lambda _gateway: None)
     monkeypatch.setattr(
-        board_lifecycle.OpenClawGatewayProvisioner,
+        board_lifecycle.AgentGatewayProvisioner,
         "delete_agent_lifecycle",
         _fake_delete_agent_lifecycle,
     )

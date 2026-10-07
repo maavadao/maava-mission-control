@@ -9,7 +9,7 @@ from uuid import uuid4
 import pytest
 
 from app.core.time import utcnow
-from app.services.openclaw.lifecycle_queue import (
+from app.services.agent_gateway.lifecycle_queue import (
     QueuedAgentLifecycleReconcile,
     decode_lifecycle_task,
     defer_lifecycle_reconcile,
@@ -37,7 +37,7 @@ def test_enqueue_lifecycle_reconcile_uses_delayed_enqueue(
         return True
 
     monkeypatch.setattr(
-        "app.services.openclaw.lifecycle_queue.enqueue_task_with_delay",
+        "app.services.agent_gateway.lifecycle_queue.enqueue_task_with_delay",
         _fake_enqueue_with_delay,
     )
 
@@ -76,7 +76,7 @@ def test_defer_lifecycle_reconcile_keeps_attempt_count(
         return True
 
     monkeypatch.setattr(
-        "app.services.openclaw.lifecycle_queue.enqueue_task_with_delay",
+        "app.services.agent_gateway.lifecycle_queue.enqueue_task_with_delay",
         _fake_enqueue_with_delay,
     )
     deadline = utcnow() + timedelta(minutes=1)

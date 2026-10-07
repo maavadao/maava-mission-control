@@ -36,9 +36,9 @@ from app.services.activity_log import record_activity
 from app.services.board_group_snapshot import build_board_group_snapshot
 from app.services.board_lifecycle import delete_board as delete_board_service
 from app.services.board_snapshot import build_board_snapshot
-from app.services.openclaw.gateway_dispatch import GatewayDispatchService
-from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
-from app.services.openclaw.gateway_rpc import OpenClawGatewayError
+from app.services.agent_gateway.gateway_dispatch import GatewayDispatchService
+from app.services.agent_gateway.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.agent_gateway.gateway_rpc import AgentGatewayError
 from app.services.organizations import OrganizationContext, board_access_filter
 
 if TYPE_CHECKING:
@@ -561,7 +561,7 @@ async def update_board(
                     board=updated,
                     group=previous_group,
                 )
-            except (OpenClawGatewayError, OSError, RuntimeError, ValueError):
+            except (AgentGatewayError, OSError, RuntimeError, ValueError):
                 logger.exception(
                     "board.group.leave.notify_unexpected board_id=%s group_id=%s",
                     updated.id,
@@ -576,7 +576,7 @@ async def update_board(
                     board=updated,
                     group=board_group,
                 )
-            except (OpenClawGatewayError, OSError, RuntimeError, ValueError):
+            except (AgentGatewayError, OSError, RuntimeError, ValueError):
                 logger.exception(
                     "board.group.join.notify_unexpected board_id=%s group_id=%s",
                     updated.id,
@@ -589,7 +589,7 @@ async def update_board(
                 board=updated,
                 changed_fields=changed_fields,
             )
-        except (OpenClawGatewayError, OSError, RuntimeError, ValueError):
+        except (AgentGatewayError, OSError, RuntimeError, ValueError):
             logger.exception(
                 "board.update.notify_lead_unexpected board_id=%s changed_fields=%s",
                 updated.id,

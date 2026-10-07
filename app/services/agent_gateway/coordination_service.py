@@ -27,30 +27,30 @@ from app.schemas.gateway_coordination import (
     GatewayMainAskUserResponse,
 )
 from app.services.activity_log import record_activity
-from app.services.openclaw.db_service import OpenClawDBService
-from app.services.openclaw.exceptions import (
+from app.services.agent_gateway.db_service import AgentDBService
+from app.services.agent_gateway.exceptions import (
     GatewayOperation,
     map_gateway_error_message,
     map_gateway_error_to_http_exception,
 )
-from app.services.openclaw.gateway_dispatch import GatewayDispatchService
-from app.services.openclaw.gateway_resolver import gateway_client_config
-from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
-from app.services.openclaw.gateway_rpc import OpenClawGatewayError, openclaw_call
-from app.services.openclaw.internal.agent_key import agent_key
-from app.services.openclaw.internal.retry import with_coordination_gateway_retry
-from app.services.openclaw.policies import OpenClawAuthorizationPolicy
-from app.services.openclaw.provisioning_db import (
+from app.services.agent_gateway.gateway_dispatch import GatewayDispatchService
+from app.services.agent_gateway.gateway_resolver import gateway_client_config
+from app.services.agent_gateway.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.agent_gateway.gateway_rpc import AgentGatewayError, gateway_call
+from app.services.agent_gateway.internal.agent_key import agent_key
+from app.services.agent_gateway.internal.retry import with_coordination_gateway_retry
+from app.services.agent_gateway.policies import AgentAuthorizationPolicy
+from app.services.agent_gateway.provisioning_db import (
     LeadAgentOptions,
     LeadAgentRequest,
-    OpenClawProvisioningService,
+    AgentProvisioningService,
 )
-from app.services.openclaw.shared import GatewayAgentIdentity
+from app.services.agent_gateway.shared import GatewayAgentIdentity
 
 _T = TypeVar("_T")
 
 
-class AbstractGatewayMessagingService(OpenClawDBService, ABC):
+class AbstractGatewayMessagingService(AgentDBService, ABC):
     """Shared gateway messaging primitives with retry semantics."""
 
     @staticmethod
@@ -109,7 +109,7 @@ class GatewayCoordinationService(AbstractGatewayMessagingService):
             "Reply to the gateway agent by writing a NON-chat memory item on this board:\n"
             f"POST {base_url}/api/v1/agent/boards/{board.id}/memory\n"
             f'Body: {{"content":"...","tags":{tags_json},"source":"{source}"}}\n'
-            "Do NOT reply in OpenClaw chat."
+            "Do NOT reply in mawaDao Agent chat."
         )
 
     async def require_gateway_main_actor(
@@ -117,7 +117,7 @@ class GatewayCoordinationService(AbstractGatewayMessagingService):
         actor_agent: Agent,
     ) -> tuple[Gateway, GatewayClientConfig]:
         gateway = await Gateway.objects.by_id(actor_agent.gateway_id).first(self.session)
-        gateway = OpenClawAuthorizationPolicy.require_gateway_main_actor_binding(
+        gateway = AgentAuthorizationPolicy.require_gateway_main_actor_binding(
             actor_agent=actor_agent,
             gateway=gateway,
         )
@@ -130,7 +130,7 @@ class GatewayCoordinationService(AbstractGatewayMessagingService):
         board_id: UUID | str,
     ) -> Board:
         board = await Board.objects.by_id(board_id).first(self.session)
-        return OpenClawAuthorizationPolicy.require_board_in_gateway(
+        return AgentAuthorizationPolicy.require_board_in_gateway(
             board=board,
             gateway=gateway,
         )
@@ -142,7 +142,7 @@ class GatewayCoordinationService(AbstractGatewayMessagingService):
         agent_id: str,
     ) -> Agent:
         target = await Agent.objects.by_id(agent_id).first(self.session)
-        return OpenClawAuthorizationPolicy.require_board_agent_target(
+        return AgentAuthorizationPolicy.require_board_agent_target(
             target=target,
             board=board,
         )
@@ -198,7 +198,7 @@ class GatewayCoordinationService(AbstractGatewayMessagingService):
                 message=message,
                 deliver=True,
             )
-        except (OpenClawGatewayError, TimeoutError) as exc:
+        except (AgentGatewayError, TimeoutError) as exc:
             record_activity(
                 self.session,
                 event_type="agent.nudge.failed",
@@ -268,14 +268,14 @@ class GatewayCoordinationService(AbstractGatewayMessagingService):
         try:
 
             async def _do_get() -> object:
-                return await openclaw_call(
+                return await gateway_call(
                     "agents.files.get",
                     {"agentId": agent_key(target), "name": "SOUL.md"},
                     config=config,
                 )
 
             payload = await self._with_gateway_retry(_do_get)
-        except (OpenClawGatewayError, TimeoutError) as exc:
+        except (AgentGatewayError, TimeoutError) as exc:
             self.logger.error(
                 "gateway.coordination.soul_read.failed trace_id=%s board_id=%s "
                 "target_agent_id=%s error=%s",
@@ -352,7 +352,7 @@ class GatewayCoordinationService(AbstractGatewayMessagingService):
         try:
 
             async def _do_set() -> object:
-                return await openclaw_call(
+                return await gateway_call(
                     "agents.files.set",
                     {
                         "agentId": agent_key(target),
@@ -363,7 +363,7 @@ class GatewayCoordinationService(AbstractGatewayMessagingService):
                 )
 
             await self._with_gateway_retry(_do_set)
-        except (OpenClawGatewayError, TimeoutError) as exc:
+        except (AgentGatewayError, TimeoutError) as exc:
             self.logger.error(
                 "gateway.coordination.soul_write.failed trace_id=%s board_id=%s "
                 "target_agent_id=%s actor_agent_id=%s error=%s",
@@ -449,7 +449,7 @@ class GatewayCoordinationService(AbstractGatewayMessagingService):
             f"{correlation_line}"
             f"{channel_line}\n"
             f"{payload.content.strip()}\n\n"
-            "Please reach the user via your configured OpenClaw channel(s) "
+            "Please reach the user via your configured mawaDao Agent channel(s) "
             "(Slack/SMS/etc).\n"
             "If you cannot reach them there, post the question in Mission Control "
             "board chat as a fallback.\n\n"
@@ -457,7 +457,7 @@ class GatewayCoordinationService(AbstractGatewayMessagingService):
             "NON-chat memory item on this board:\n"
             f"POST {base_url}/api/v1/agent/boards/{board.id}/memory\n"
             f'Body: {{"content":"<answer>","tags":{tags_json},"source":"{reply_source}"}}\n'
-            "Do NOT reply in OpenClaw chat."
+            "Do NOT reply in mawaDao Agent chat."
         )
         try:
             await self._dispatch_gateway_message(
@@ -467,7 +467,7 @@ class GatewayCoordinationService(AbstractGatewayMessagingService):
                 message=message,
                 deliver=True,
             )
-        except (OpenClawGatewayError, TimeoutError) as exc:
+        except (AgentGatewayError, TimeoutError) as exc:
             record_activity(
                 self.session,
                 event_type="gateway.lead.ask_user.failed",
@@ -533,7 +533,7 @@ class GatewayCoordinationService(AbstractGatewayMessagingService):
         board: Board,
         message: str,
     ) -> tuple[Agent, bool]:
-        lead, lead_created = await OpenClawProvisioningService(
+        lead, lead_created = await AgentProvisioningService(
             self.session
         ).ensure_board_lead_agent(
             request=LeadAgentRequest(
@@ -594,7 +594,7 @@ class GatewayCoordinationService(AbstractGatewayMessagingService):
                 board=board,
                 message=message,
             )
-        except (OpenClawGatewayError, TimeoutError) as exc:
+        except (AgentGatewayError, TimeoutError) as exc:
             record_activity(
                 self.session,
                 event_type="gateway.main.lead_message.failed",
@@ -703,7 +703,7 @@ class GatewayCoordinationService(AbstractGatewayMessagingService):
                     ok=True,
                 )
                 sent += 1
-            except (HTTPException, OpenClawGatewayError, TimeoutError, ValueError) as exc:
+            except (HTTPException, AgentGatewayError, TimeoutError, ValueError) as exc:
                 board_result = GatewayLeadBroadcastBoardResult(
                     board_id=board.id,
                     ok=False,

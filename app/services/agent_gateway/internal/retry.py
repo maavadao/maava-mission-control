@@ -6,7 +6,7 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from typing import TypeVar
 
-from app.services.openclaw.constants import (
+from app.services.agent_gateway.constants import (
     _COORDINATION_GATEWAY_BASE_DELAY_S,
     _COORDINATION_GATEWAY_MAX_DELAY_S,
     _COORDINATION_GATEWAY_TIMEOUT_S,
@@ -14,13 +14,13 @@ from app.services.openclaw.constants import (
     _SECURE_RANDOM,
     _TRANSIENT_GATEWAY_ERROR_MARKERS,
 )
-from app.services.openclaw.gateway_rpc import OpenClawGatewayError
+from app.services.agent_gateway.gateway_rpc import AgentGatewayError
 
 _T = TypeVar("_T")
 
 
 def _is_transient_gateway_error(exc: Exception) -> bool:
-    if not isinstance(exc, OpenClawGatewayError):
+    if not isinstance(exc, AgentGatewayError):
         return False
     message = str(exc).lower()
     if not message:
@@ -33,7 +33,7 @@ def _is_transient_gateway_error(exc: Exception) -> bool:
 
 
 def _gateway_timeout_message(
-    exc: OpenClawGatewayError,
+    exc: AgentGatewayError,
     *,
     timeout_s: float,
     context: str,
@@ -70,10 +70,10 @@ class GatewayBackoff:
     @staticmethod
     async def _attempt(
         fn: Callable[[], Awaitable[_T]],
-    ) -> tuple[_T | None, OpenClawGatewayError | None]:
+    ) -> tuple[_T | None, AgentGatewayError | None]:
         try:
             return await fn(), None
-        except OpenClawGatewayError as exc:
+        except AgentGatewayError as exc:
             return None, exc
 
     async def run(self, fn: Callable[[], Awaitable[_T]]) -> _T:

@@ -14,7 +14,7 @@ sys.path.insert(0, str(BACKEND_ROOT))
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Sync templates/ to existing OpenClaw gateway agent workspaces.",
+        description="Sync templates/ to existing mawaDao Agent gateway agent workspaces.",
     )
     parser.add_argument("--gateway-id", type=str, required=True, help="Gateway UUID")
     parser.add_argument(
@@ -69,9 +69,9 @@ async def _run() -> int:
     from app.db.session import async_session_maker
     from app.models.gateways import Gateway
     from app.models.users import User
-    from app.services.openclaw.provisioning_db import (
+    from app.services.agent_gateway.provisioning_db import (
         GatewayTemplateSyncOptions,
-        OpenClawProvisioningService,
+        AgentProvisioningService,
     )
 
     args = _parse_args()
@@ -89,7 +89,7 @@ async def _run() -> int:
             message = f"User not found: {user_id}"
             raise SystemExit(message)
 
-        result = await OpenClawProvisioningService(session).sync_gateway_templates(
+        result = await AgentProvisioningService(session).sync_gateway_templates(
             gateway,
             GatewayTemplateSyncOptions(
                 user=template_user,

@@ -1,4 +1,4 @@
-"""Shared DB mutation helpers for OpenClaw agent lifecycle services."""
+"""Shared DB mutation helpers for gateway agent lifecycle services."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import Literal
 from app.core.agent_tokens import generate_agent_token, hash_agent_token
 from app.core.time import utcnow
 from app.models.agents import Agent
-from app.services.openclaw.constants import DEFAULT_HEARTBEAT_CONFIG
+from app.services.agent_gateway.constants import DEFAULT_HEARTBEAT_CONFIG
 
 
 def ensure_heartbeat_config(agent: Agent) -> None:

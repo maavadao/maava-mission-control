@@ -5,14 +5,14 @@ from uuid import uuid4
 
 import pytest
 
-import app.services.openclaw.session_service as session_service
+import app.services.agent_gateway.session_service as session_service
 from app.models.gateways import Gateway
 from app.schemas.gateway_api import GatewayResolveQuery
-from app.services.openclaw.gateway_resolver import (
+from app.services.agent_gateway.gateway_resolver import (
     gateway_client_config,
     optional_gateway_client_config,
 )
-from app.services.openclaw.session_service import GatewaySessionService
+from app.services.agent_gateway.session_service import GatewaySessionService
 
 
 def _gateway(

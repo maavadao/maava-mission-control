@@ -1,6 +1,6 @@
 # Backend Templates (Product Documentation)
 
-This folder contains the Markdown templates Mission Control syncs into OpenClaw agent workspaces.
+This folder contains the Markdown templates Mission Control syncs into gateway agent workspaces.
 
 - Location in repo: `backend/templates/`
 - Runtime location in backend container: `/app/templates`
@@ -23,7 +23,7 @@ When a gateway template sync runs, these templates are rendered with agent/board
 
 ### Rendering configuration
 
-Defined in `backend/app/services/openclaw/provisioning.py` (`_template_env()`):
+Defined in `backend/app/services/agent_gateway/provisioning.py` (`_template_env()`):
 
 - `StrictUndefined` enabled (missing variables fail fast)
 - `autoescape=False` (Markdown output)
@@ -43,7 +43,7 @@ Defined in `backend/app/services/openclaw/provisioning.py` (`_template_env()`):
 `POST /api/v1/gateways/{gateway_id}/templates/sync`
 
 - Router: `backend/app/api/gateways.py` (`sync_gateway_templates`)
-- Service: `backend/app/services/openclaw/provisioning_db.py`
+- Service: `backend/app/services/agent_gateway/provisioning_db.py`
 
 ### Script
 
@@ -59,27 +59,27 @@ python backend/scripts/sync_gateway_templates.py --gateway-id <uuid>
 
 Board-agent default synced files are defined in:
 
-- `backend/app/services/openclaw/constants.py` (`DEFAULT_GATEWAY_FILES`)
+- `backend/app/services/agent_gateway/constants.py` (`DEFAULT_GATEWAY_FILES`)
 
 Board-lead file contract is defined in:
 
-- `backend/app/services/openclaw/constants.py` (`LEAD_GATEWAY_FILES`)
+- `backend/app/services/agent_gateway/constants.py` (`LEAD_GATEWAY_FILES`)
 
 Lead-only override mapping (when needed) is defined in:
 
-- `backend/app/services/openclaw/constants.py` (`LEAD_TEMPLATE_MAP`)
+- `backend/app/services/agent_gateway/constants.py` (`LEAD_TEMPLATE_MAP`)
 
 Shared board-agent mapping (lead + non-lead) is defined in:
 
-- `backend/app/services/openclaw/constants.py` (`BOARD_SHARED_TEMPLATE_MAP`)
+- `backend/app/services/agent_gateway/constants.py` (`BOARD_SHARED_TEMPLATE_MAP`)
 
 Main-agent template mapping is defined in:
 
-- `backend/app/services/openclaw/constants.py` (`MAIN_TEMPLATE_MAP`)
+- `backend/app/services/agent_gateway/constants.py` (`MAIN_TEMPLATE_MAP`)
 
 Provisioning selection logic is implemented in:
 
-- `backend/app/services/openclaw/provisioning.py`
+- `backend/app/services/agent_gateway/provisioning.py`
   - `BoardAgentLifecycleManager._file_names()`
   - `BoardAgentLifecycleManager._template_overrides()`
   - `GatewayMainAgentLifecycleManager._template_overrides()`

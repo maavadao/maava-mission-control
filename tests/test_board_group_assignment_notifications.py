@@ -14,8 +14,8 @@ from app.models.agents import Agent
 from app.models.board_groups import BoardGroup
 from app.models.boards import Board
 from app.schemas.boards import BoardUpdate
-from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
-from app.services.openclaw.gateway_rpc import OpenClawGatewayError
+from app.services.agent_gateway.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.agent_gateway.gateway_rpc import AgentGatewayError
 
 
 @dataclass
@@ -363,11 +363,11 @@ async def test_notify_agents_on_board_group_addition_fanout_and_records_results(
     async def _fake_try_send_agent_message(
         self: boards.GatewayDispatchService,
         **kwargs: Any,
-    ) -> OpenClawGatewayError | None:
+    ) -> AgentGatewayError | None:
         _ = self
         sent.append(kwargs)
         if kwargs["session_key"] == "agent:worker:session":
-            return OpenClawGatewayError("gateway down")
+            return AgentGatewayError("gateway down")
         return None
 
     monkeypatch.setattr(boards, "Agent", _FakeAgentModel)
@@ -471,7 +471,7 @@ async def test_notify_agents_on_board_group_removal_fanout_and_records_results(
     async def _fake_try_send_agent_message(
         self: boards.GatewayDispatchService,
         **kwargs: Any,
-    ) -> OpenClawGatewayError | None:
+    ) -> AgentGatewayError | None:
         _ = self
         sent.append(kwargs)
         return None

@@ -1,17 +1,17 @@
 # ruff: noqa: S101
-"""Unit tests for deterministic OpenClaw session-key helpers."""
+"""Unit tests for deterministic mawaDao Agent session-key helpers."""
 
 from __future__ import annotations
 
 from uuid import UUID
 
-from app.services.openclaw.internal.session_keys import (
+from app.services.agent_gateway.internal.session_keys import (
     board_agent_session_key,
     board_lead_session_key,
     board_scoped_session_key,
     gateway_main_session_key,
 )
-from app.services.openclaw.shared import GatewayAgentIdentity
+from app.services.agent_gateway.shared import GatewayAgentIdentity
 
 
 def test_gateway_main_session_key_matches_gateway_identity() -> None:

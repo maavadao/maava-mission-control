@@ -8,10 +8,10 @@ from uuid import UUID, uuid4
 
 import pytest
 
-import app.services.openclaw.internal.agent_key as agent_key_mod
-import app.services.openclaw.provisioning as agent_provisioning
-from app.services.openclaw.provisioning_db import AgentLifecycleService
-from app.services.openclaw.shared import GatewayAgentIdentity
+import app.services.agent_gateway.internal.agent_key as agent_key_mod
+import app.services.agent_gateway.provisioning as agent_provisioning
+from app.services.agent_gateway.provisioning_db import AgentLifecycleService
+from app.services.agent_gateway.shared import GatewayAgentIdentity
 from app.services.souls_directory import SoulRef
 
 
@@ -155,17 +155,17 @@ async def test_provision_main_agent_uses_dedicated_openclaw_agent_id(monkeypatch
         return None
 
     monkeypatch.setattr(
-        agent_provisioning.OpenClawGatewayControlPlane,
+        agent_provisioning.AgentGatewayControlPlane,
         "ensure_agent_session",
         _fake_ensure_agent_session,
     )
     monkeypatch.setattr(
-        agent_provisioning.OpenClawGatewayControlPlane,
+        agent_provisioning.AgentGatewayControlPlane,
         "upsert_agent",
         _fake_upsert_agent,
     )
     monkeypatch.setattr(
-        agent_provisioning.OpenClawGatewayControlPlane,
+        agent_provisioning.AgentGatewayControlPlane,
         "list_agent_files",
         _fake_list_agent_files,
     )
@@ -176,7 +176,7 @@ async def test_provision_main_agent_uses_dedicated_openclaw_agent_id(monkeypatch
         _fake_set_agent_files,
     )
 
-    await agent_provisioning.OpenClawGatewayProvisioner().apply_agent_lifecycle(
+    await agent_provisioning.AgentGatewayProvisioner().apply_agent_lifecycle(
         agent=agent,  # type: ignore[arg-type]
         gateway=gateway,  # type: ignore[arg-type]
         board=None,
@@ -466,7 +466,7 @@ async def test_set_agent_files_update_overwrite_writes_preserved_user_md():
 async def test_control_plane_upsert_agent_create_then_update(monkeypatch):
     calls: list[tuple[str, dict[str, object] | None]] = []
 
-    async def _fake_openclaw_call(method, params=None, config=None):
+    async def _fake_gateway_call(method, params=None, config=None):
         _ = config
         calls.append((method, params))
         if method == "agents.create":
@@ -479,8 +479,8 @@ async def test_control_plane_upsert_agent_create_then_update(monkeypatch):
             return {"ok": True}
         raise AssertionError(f"Unexpected method: {method}")
 
-    monkeypatch.setattr(agent_provisioning, "openclaw_call", _fake_openclaw_call)
-    cp = agent_provisioning.OpenClawGatewayControlPlane(
+    monkeypatch.setattr(agent_provisioning, "gateway_call", _fake_gateway_call)
+    cp = agent_provisioning.AgentGatewayControlPlane(
         agent_provisioning.GatewayClientConfig(url="ws://gateway.example/ws", token=None),
     )
     await cp.upsert_agent(
@@ -500,11 +500,11 @@ async def test_control_plane_upsert_agent_create_then_update(monkeypatch):
 async def test_control_plane_upsert_agent_handles_already_exists(monkeypatch):
     calls: list[tuple[str, dict[str, object] | None]] = []
 
-    async def _fake_openclaw_call(method, params=None, config=None):
+    async def _fake_gateway_call(method, params=None, config=None):
         _ = config
         calls.append((method, params))
         if method == "agents.create":
-            raise agent_provisioning.OpenClawGatewayError("already exists")
+            raise agent_provisioning.AgentGatewayError("already exists")
         if method == "agents.update":
             return {"ok": True}
         if method == "config.get":
@@ -513,8 +513,8 @@ async def test_control_plane_upsert_agent_handles_already_exists(monkeypatch):
             return {"ok": True}
         raise AssertionError(f"Unexpected method: {method}")
 
-    monkeypatch.setattr(agent_provisioning, "openclaw_call", _fake_openclaw_call)
-    cp = agent_provisioning.OpenClawGatewayControlPlane(
+    monkeypatch.setattr(agent_provisioning, "gateway_call", _fake_gateway_call)
+    cp = agent_provisioning.AgentGatewayControlPlane(
         agent_provisioning.GatewayClientConfig(url="ws://gateway.example/ws", token=None),
     )
     await cp.upsert_agent(
@@ -539,7 +539,7 @@ async def test_control_plane_upsert_agent_retries_update_after_create_race(monke
     async def _fake_sleep(seconds: float) -> None:
         sleeps.append(seconds)
 
-    async def _fake_openclaw_call(method, params=None, config=None):
+    async def _fake_gateway_call(method, params=None, config=None):
         nonlocal update_attempts
         _ = config
         calls.append((method, params))
@@ -548,7 +548,7 @@ async def test_control_plane_upsert_agent_retries_update_after_create_race(monke
         if method == "agents.update":
             update_attempts += 1
             if update_attempts < 3:
-                raise agent_provisioning.OpenClawGatewayError('agent "board-agent-a" not found')
+                raise agent_provisioning.AgentGatewayError('agent "board-agent-a" not found')
             return {"ok": True}
         if method == "config.get":
             return {"hash": None, "config": {"agents": {"list": []}}}
@@ -556,9 +556,9 @@ async def test_control_plane_upsert_agent_retries_update_after_create_race(monke
             return {"ok": True}
         raise AssertionError(f"Unexpected method: {method}")
 
-    monkeypatch.setattr(agent_provisioning, "openclaw_call", _fake_openclaw_call)
+    monkeypatch.setattr(agent_provisioning, "gateway_call", _fake_gateway_call)
     monkeypatch.setattr(agent_provisioning.asyncio, "sleep", _fake_sleep)
-    cp = agent_provisioning.OpenClawGatewayControlPlane(
+    cp = agent_provisioning.AgentGatewayControlPlane(
         agent_provisioning.GatewayClientConfig(url="ws://gateway.example/ws", token=None),
     )
     await cp.upsert_agent(
@@ -583,22 +583,22 @@ async def test_control_plane_upsert_agent_missing_after_already_exists_fails_fas
     async def _fake_sleep(seconds: float) -> None:
         sleeps.append(seconds)
 
-    async def _fake_openclaw_call(method, params=None, config=None):
+    async def _fake_gateway_call(method, params=None, config=None):
         _ = config
         calls.append((method, params))
         if method == "agents.create":
-            raise agent_provisioning.OpenClawGatewayError("already exists")
+            raise agent_provisioning.AgentGatewayError("already exists")
         if method == "agents.update":
-            raise agent_provisioning.OpenClawGatewayError('agent "board-agent-a" not found')
+            raise agent_provisioning.AgentGatewayError('agent "board-agent-a" not found')
         raise AssertionError(f"Unexpected method: {method}")
 
-    monkeypatch.setattr(agent_provisioning, "openclaw_call", _fake_openclaw_call)
+    monkeypatch.setattr(agent_provisioning, "gateway_call", _fake_gateway_call)
     monkeypatch.setattr(agent_provisioning.asyncio, "sleep", _fake_sleep)
-    cp = agent_provisioning.OpenClawGatewayControlPlane(
+    cp = agent_provisioning.AgentGatewayControlPlane(
         agent_provisioning.GatewayClientConfig(url="ws://gateway.example/ws", token=None),
     )
 
-    with pytest.raises(agent_provisioning.OpenClawGatewayError):
+    with pytest.raises(agent_provisioning.AgentGatewayError):
         await cp.upsert_agent(
             agent_provisioning.GatewayAgentRegistration(
                 agent_id="board-agent-a",
@@ -615,10 +615,10 @@ async def test_control_plane_upsert_agent_missing_after_already_exists_fails_fas
 
 def test_is_missing_agent_error_matches_gateway_agent_not_found() -> None:
     assert agent_provisioning._is_missing_agent_error(
-        agent_provisioning.OpenClawGatewayError('agent "mc-abc" not found'),
+        agent_provisioning.AgentGatewayError('agent "mc-abc" not found'),
     )
     assert not agent_provisioning._is_missing_agent_error(
-        agent_provisioning.OpenClawGatewayError("dial tcp: connection refused"),
+        agent_provisioning.AgentGatewayError("dial tcp: connection refused"),
     )
 
 
@@ -694,7 +694,7 @@ async def test_delete_agent_lifecycle_ignores_missing_gateway_agent(monkeypatch)
 
         async def delete_agent(self, agent_id: str, *, delete_files: bool = True) -> None:
             _ = (agent_id, delete_files)
-            raise agent_provisioning.OpenClawGatewayError('agent "mc-abc" not found')
+            raise agent_provisioning.AgentGatewayError('agent "mc-abc" not found')
 
         async def delete_agent_session(self, session_key: str) -> None:
             self.deleted_sessions.append(session_key)
@@ -716,7 +716,7 @@ async def test_delete_agent_lifecycle_ignores_missing_gateway_agent(monkeypatch)
     control_plane = _ControlPlaneStub()
     monkeypatch.setattr(agent_provisioning, "_control_plane_for_gateway", lambda _g: control_plane)
 
-    await agent_provisioning.OpenClawGatewayProvisioner().delete_agent_lifecycle(
+    await agent_provisioning.AgentGatewayProvisioner().delete_agent_lifecycle(
         agent=agent,  # type: ignore[arg-type]
         gateway=gateway,  # type: ignore[arg-type]
         delete_files=True,
@@ -731,7 +731,7 @@ async def test_delete_agent_lifecycle_raises_on_non_missing_agent_error(monkeypa
     class _ControlPlaneStub:
         async def delete_agent(self, agent_id: str, *, delete_files: bool = True) -> None:
             _ = (agent_id, delete_files)
-            raise agent_provisioning.OpenClawGatewayError("gateway timeout")
+            raise agent_provisioning.AgentGatewayError("gateway timeout")
 
         async def delete_agent_session(self, session_key: str) -> None:
             _ = session_key
@@ -757,8 +757,8 @@ async def test_delete_agent_lifecycle_raises_on_non_missing_agent_error(monkeypa
         lambda _g: _ControlPlaneStub(),
     )
 
-    with pytest.raises(agent_provisioning.OpenClawGatewayError):
-        await agent_provisioning.OpenClawGatewayProvisioner().delete_agent_lifecycle(
+    with pytest.raises(agent_provisioning.AgentGatewayError):
+        await agent_provisioning.AgentGatewayProvisioner().delete_agent_lifecycle(
             agent=agent,  # type: ignore[arg-type]
             gateway=gateway,  # type: ignore[arg-type]
             delete_files=True,

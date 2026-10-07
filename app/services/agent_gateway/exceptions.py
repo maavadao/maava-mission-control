@@ -1,4 +1,4 @@
-"""OpenClaw-specific exception definitions and mapping helpers."""
+"""mawaDao Agent-specific exception definitions and mapping helpers."""
 
 from __future__ import annotations
 

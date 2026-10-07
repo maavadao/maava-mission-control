@@ -18,7 +18,7 @@ async def run() -> None:
     from app.models.boards import Board
     from app.models.gateways import Gateway
     from app.models.users import User
-    from app.services.openclaw.shared import GatewayAgentIdentity
+    from app.services.agent_gateway.shared import GatewayAgentIdentity
 
     await init_db()
     async with async_session_maker() as session:

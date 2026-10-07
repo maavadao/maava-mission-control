@@ -57,9 +57,9 @@ from app.services.approval_task_links import (
     pending_approval_conflicts_by_task,
 )
 from app.services.mentions import extract_mentions, matches_agent_mention
-from app.services.openclaw.gateway_dispatch import GatewayDispatchService
-from app.services.openclaw.gateway_rpc import GatewayConfig as GatewayClientConfig
-from app.services.openclaw.gateway_rpc import OpenClawGatewayError
+from app.services.agent_gateway.gateway_dispatch import GatewayDispatchService
+from app.services.agent_gateway.gateway_rpc import GatewayConfig as GatewayClientConfig
+from app.services.agent_gateway.gateway_rpc import AgentGatewayError
 from app.services.organizations import require_board_access
 from app.services.tags import (
     TagState,
@@ -565,7 +565,7 @@ async def _send_lead_task_message(
     session_key: str,
     config: GatewayClientConfig,
     message: str,
-) -> OpenClawGatewayError | None:
+) -> AgentGatewayError | None:
     return await dispatch.try_send_agent_message(
         session_key=session_key,
         config=config,
@@ -582,7 +582,7 @@ async def _send_agent_task_message(
     config: GatewayClientConfig,
     agent_name: str,
     message: str,
-) -> OpenClawGatewayError | None:
+) -> AgentGatewayError | None:
     return await dispatch.try_send_agent_message(
         session_key=session_key,
         config=config,

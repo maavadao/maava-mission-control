@@ -32,13 +32,13 @@ from app.schemas.skills_marketplace import (
     SkillPackRead,
     SkillPackSyncResponse,
 )
-from app.services.openclaw.gateway_dispatch import GatewayDispatchService
-from app.services.openclaw.gateway_resolver import (
+from app.services.agent_gateway.gateway_dispatch import GatewayDispatchService
+from app.services.agent_gateway.gateway_resolver import (
     gateway_client_config,
     require_gateway_workspace_root,
 )
-from app.services.openclaw.gateway_rpc import OpenClawGatewayError
-from app.services.openclaw.shared import GatewayAgentIdentity
+from app.services.agent_gateway.gateway_rpc import AgentGatewayError
+from app.services.agent_gateway.shared import GatewayAgentIdentity
 from app.services.organizations import OrganizationContext
 
 if TYPE_CHECKING:
@@ -909,7 +909,7 @@ async def _run_marketplace_skill_action(
             gateway=gateway,
             message=instruction,
         )
-    except OpenClawGatewayError as exc:
+    except AgentGatewayError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(exc),

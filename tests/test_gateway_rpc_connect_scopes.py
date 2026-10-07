@@ -2,18 +2,18 @@ from __future__ import annotations
 
 import pytest
 
-import app.services.openclaw.gateway_rpc as gateway_rpc
-from app.services.openclaw.gateway_rpc import (
+import app.services.agent_gateway.gateway_rpc as gateway_rpc
+from app.services.agent_gateway.gateway_rpc import (
     CONTROL_UI_CLIENT_ID,
     CONTROL_UI_CLIENT_MODE,
     DEFAULT_GATEWAY_CLIENT_ID,
     DEFAULT_GATEWAY_CLIENT_MODE,
     GATEWAY_OPERATOR_SCOPES,
     GatewayConfig,
-    OpenClawGatewayError,
+    AgentGatewayError,
     _build_connect_params,
     _build_control_ui_origin,
-    openclaw_call,
+    gateway_call,
 )
 
 
@@ -143,7 +143,7 @@ def test_build_control_ui_origin(gateway_url: str, expected_origin: str) -> None
 
 
 @pytest.mark.asyncio
-async def test_openclaw_call_uses_single_connect_attempt(
+async def test_gateway_call_uses_single_connect_attempt(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     call_count = 0
@@ -160,9 +160,9 @@ async def test_openclaw_call_uses_single_connect_attempt(
         call_count += 1
         return {"ok": True}
 
-    monkeypatch.setattr(gateway_rpc, "_openclaw_call_once", _fake_call_once)
+    monkeypatch.setattr(gateway_rpc, "_gateway_call_once", _fake_call_once)
 
-    payload = await openclaw_call(
+    payload = await gateway_call(
         "status",
         config=GatewayConfig(url="ws://gateway.example/ws"),
     )
@@ -172,7 +172,7 @@ async def test_openclaw_call_uses_single_connect_attempt(
 
 
 @pytest.mark.asyncio
-async def test_openclaw_call_surfaces_scope_error_without_device_fallback(
+async def test_gateway_call_surfaces_scope_error_without_device_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     async def _fake_call_once(
@@ -183,12 +183,12 @@ async def test_openclaw_call_surfaces_scope_error_without_device_fallback(
         gateway_url: str,
     ) -> object:
         del method, params, config, gateway_url
-        raise OpenClawGatewayError("missing scope: operator.read")
+        raise AgentGatewayError("missing scope: operator.read")
 
-    monkeypatch.setattr(gateway_rpc, "_openclaw_call_once", _fake_call_once)
+    monkeypatch.setattr(gateway_rpc, "_gateway_call_once", _fake_call_once)
 
-    with pytest.raises(OpenClawGatewayError, match="missing scope: operator.read"):
-        await openclaw_call(
+    with pytest.raises(AgentGatewayError, match="missing scope: operator.read"):
+        await gateway_call(
             "status",
             config=GatewayConfig(url="ws://gateway.example/ws", token="secret-token"),
         )
@@ -203,7 +203,7 @@ class _FakeConnectContext:
 
 
 @pytest.mark.asyncio
-async def test_openclaw_call_once_does_not_pass_ssl_none_for_wss(
+async def test_gateway_call_once_does_not_pass_ssl_none_for_wss(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, object] = {}
@@ -229,7 +229,7 @@ async def test_openclaw_call_once_does_not_pass_ssl_none_for_wss(
     monkeypatch.setattr(gateway_rpc, "_ensure_connected", _fake_ensure_connected)
     monkeypatch.setattr(gateway_rpc, "_send_request", _fake_send_request)
 
-    payload = await gateway_rpc._openclaw_call_once(
+    payload = await gateway_rpc._gateway_call_once(
         "status",
         None,
         config=GatewayConfig(url="wss://gateway.example/ws", allow_insecure_tls=False),
@@ -244,7 +244,7 @@ async def test_openclaw_call_once_does_not_pass_ssl_none_for_wss(
 
 
 @pytest.mark.asyncio
-async def test_openclaw_call_once_passes_ssl_context_for_insecure_wss(
+async def test_gateway_call_once_passes_ssl_context_for_insecure_wss(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, object] = {}
@@ -270,7 +270,7 @@ async def test_openclaw_call_once_passes_ssl_context_for_insecure_wss(
     monkeypatch.setattr(gateway_rpc, "_ensure_connected", _fake_ensure_connected)
     monkeypatch.setattr(gateway_rpc, "_send_request", _fake_send_request)
 
-    payload = await gateway_rpc._openclaw_call_once(
+    payload = await gateway_rpc._gateway_call_once(
         "status",
         None,
         config=GatewayConfig(url="wss://gateway.example/ws", allow_insecure_tls=True),

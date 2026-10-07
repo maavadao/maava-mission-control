@@ -16,7 +16,7 @@ from app.models.agents import Agent
 from app.models.board_webhook_payloads import BoardWebhookPayload
 from app.models.board_webhooks import BoardWebhook
 from app.models.boards import Board
-from app.services.openclaw.gateway_dispatch import GatewayDispatchService
+from app.services.agent_gateway.gateway_dispatch import GatewayDispatchService
 from app.services.queue import QueuedTask
 from app.services.webhooks.queue import (
     QueuedInboundDelivery,
