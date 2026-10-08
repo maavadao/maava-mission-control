@@ -1,1 +1,1 @@
-"""mawaDao Agent Mission Control backend application package."""
+"""mawa Mission Control backend application package."""

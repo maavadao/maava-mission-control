@@ -1,6 +1,6 @@
 """Deterministic session-key helpers for gateway agents.
 
-Session keys are part of Mission Control's contract with the mawaDao Agent gateway.
+Session keys are part of Mission Control's contract with the mawa gateway.
 Centralize the string formats here to avoid drift across provisioning, DB workflows,
 and API-facing services.
 """

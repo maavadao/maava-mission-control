@@ -1,4 +1,4 @@
-"""Agent key derivation helpers shared across mawaDao Agent modules."""
+"""Agent key derivation helpers shared across mawa modules."""
 
 from __future__ import annotations
 

@@ -1,7 +1,7 @@
-"""Shared DB-backed service base classes for mawaDao Agent.
+"""Shared DB-backed service base classes for mawa.
 
 These helpers are intentionally small: they reduce boilerplate (session + logger) across
-mawaDao Agent services without adding new architectural layers.
+mawa services without adding new architectural layers.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class AgentDBService:
-    """Base class for mawaDao Agent services that require an AsyncSession."""
+    """Base class for mawa services that require an AsyncSession."""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session

@@ -1,4 +1,4 @@
-"""Shared mawaDao Agent lifecycle primitives."""
+"""Shared mawa lifecycle primitives."""
 
 from __future__ import annotations
 

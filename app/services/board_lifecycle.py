@@ -1,7 +1,7 @@
 """Board lifecycle services.
 
 This module contains DB-backed board workflows that may also interact with the
-mawaDao Agent gateway. API routes should remain thin wrappers over these helpers.
+mawa gateway. API routes should remain thin wrappers over these helpers.
 """
 
 from __future__ import annotations

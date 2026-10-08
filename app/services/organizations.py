@@ -56,7 +56,7 @@ DEFAULT_INSTALLER_SKILL_PACKS = (
     (
         "BrianRWagner/ai-marketing-skills",
         "ai-marketing-skills",
-        "Marketing frameworks that AI actually executes. Use for Claude Code, mawaDao Agent, etc.",
+        "Marketing frameworks that AI actually executes. Use for Claude Code, mawa, etc.",
     ),
 )
 ADMIN_ROLES = {"owner", "admin"}

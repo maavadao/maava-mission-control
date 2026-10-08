@@ -1,13 +1,13 @@
 """HTTP/JSON bridge client for per-tenant tenant-platform Cloud Run services.
 
-Mission Control natively talks to mawaDao Agent gateways using JSON-RPC v3 over
+Mission Control natively talks to mawa gateways using JSON-RPC v3 over
 WebSocket. For multi-tenant deployments, however, each user has their own
 ``tenant-platform`` Cloud Run service that does NOT expose a WebSocket gateway
-— instead it exposes the same mawaDao Agent RPC methods over a thin HTTP/JSON
+— instead it exposes the same mawa RPC methods over a thin HTTP/JSON
 bridge:
 
   - ``GET  {url}/healthz``                — liveness + protocol announcement
-  - ``POST {url}/api/v1/rpc/{method}``    — invoke any mawaDao Agent RPC method
+  - ``POST {url}/api/v1/rpc/{method}``    — invoke any mawa RPC method
 
 This module performs that translation when ``GatewayConfig.integration_mode``
 is set to ``"rest_bridge"``. The contract mirrors the WebSocket flow: a
@@ -33,7 +33,7 @@ from app.services.agent_gateway.gateway_rpc import GatewayConfig, AgentGatewayEr
 logger = get_logger(__name__)
 
 # Reasonable upper bound for a single bridge call (matches the worst-case
-# duration of long-running mawaDao Agent RPCs like ``status`` or ``models.list``).
+# duration of long-running mawa RPCs like ``status`` or ``models.list``).
 _DEFAULT_TIMEOUT_SECONDS = 30.0
 # A single fast probe used by the version compatibility check.
 _HEALTH_TIMEOUT_SECONDS = 10.0
@@ -105,7 +105,7 @@ async def rest_bridge_call(
     *,
     config: GatewayConfig,
 ) -> object:
-    """Invoke a mawaDao Agent RPC method against the tenant-platform REST bridge."""
+    """Invoke a mawa RPC method against the tenant-platform REST bridge."""
     base_url = _normalize_base_url(config.url)
     url = f"{base_url}/api/v1/rpc/{method}"
     payload = {"params": params or {}}

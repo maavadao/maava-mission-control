@@ -11,7 +11,7 @@ from sqlmodel import Field, SQLModel
 RUNTIME_ANNOTATION_TYPES = (datetime, UUID)
 
 # Supported gateway integration modes.
-#  - "openclaw_v3": canonical mawaDao Agent gateway WebSocket JSON-RPC v3 protocol.
+#  - "openclaw_v3": canonical mawa gateway WebSocket JSON-RPC v3 protocol.
 #  - "rest_bridge": HTTP/JSON bridge exposed by per-tenant `tenant-platform`
 #    Cloud Run services (POST /api/v1/rpc/:method, GET /healthz).
 GATEWAY_INTEGRATION_MODES: tuple[str, ...] = ("openclaw_v3", "rest_bridge")

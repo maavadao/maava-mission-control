@@ -1,6 +1,6 @@
 """DB-backed gateway config resolution and message dispatch helpers.
 
-This module exists to keep `app.api.*` thin: APIs should call mawaDao Agent services, not
+This module exists to keep `app.api.*` thin: APIs should call mawa services, not
 directly orchestrate gateway RPC calls.
 """
 

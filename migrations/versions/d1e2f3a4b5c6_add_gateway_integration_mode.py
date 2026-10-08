@@ -22,7 +22,7 @@ def upgrade() -> None:
     """Add gateway integration_mode column.
 
     Supported values:
-      - "openclaw_v3" (default): canonical mawaDao Agent gateway WebSocket JSON-RPC v3.
+      - "openclaw_v3" (default): canonical mawa gateway WebSocket JSON-RPC v3.
       - "rest_bridge": HTTP/JSON bridge served by per-tenant tenant-platform
         Cloud Run services at POST /api/v1/rpc/:method (and GET /healthz).
     """

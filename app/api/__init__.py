@@ -1,1 +1,1 @@
-"""API router modules for the mawaDao Agent Mission Control backend."""
+"""API router modules for the mawa Mission Control backend."""

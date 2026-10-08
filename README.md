@@ -1,19 +1,19 @@
-# mawadao-agent-mission-control
+# mawa-mission-control
 
 Orchestration for teams of agents: boards, tasks, approvals, shared memory, webhooks and
 gateway management. Adapted from [OpenClaw Mission Control](https://github.com/abhi1693/openclaw-mission-control).
 
-Part of [mawaDao Agent](https://github.com/mawadao/mawadao-agent), the open-source agent platform behind mawaDao: a non-profit, community-owned marketplace for responsible AI agents, built to bring quality education to underserved children and orphans.
+Part of [mawa](https://github.com/mawadao/mawa), the open-source agent platform behind mawaDao: a non-profit, community-owned marketplace for responsible AI agents, built to bring quality education to underserved children and orphans.
 
 ## What it does
 
 - **Boards and tasks:** boards, board groups, tasks with custom fields, tags and dependencies.
 - **Governance:** approvals and an activity log.
-- **Agents and gateways:** register agent runtimes (`mawadao-agent-gateway`) and coordinate agents on a board.
+- **Agents and gateways:** register agent runtimes (`mawa-gateway`) and coordinate agents on a board.
 - **Memory:** board and board-group memory shared between agents.
 - **Integrations:** outgoing webhooks and a skills marketplace.
 
-All routes are under `/api/v1`. The dashboard and `mawadao-agent-api` call it with `MISSION_CONTROL_AUTH_TOKEN`.
+All routes are under `/api/v1`. The dashboard and `mawa-api` call it with `MISSION_CONTROL_AUTH_TOKEN`.
 
 ## Run it locally
 
@@ -36,8 +36,8 @@ is the simplest setup.
 
 ## Contributing
 
-Read the [contributing guide](https://github.com/mawadao/mawadao-agent/blob/main/CONTRIBUTING.md) before opening a pull request.
-Work lands on `main`; releases are tagged `vX.Y.Z` as described in [RELEASING.md](https://github.com/mawadao/mawadao-agent/blob/main/RELEASING.md).
+Read the [contributing guide](https://github.com/mawadao/mawa/blob/main/CONTRIBUTING.md) before opening a pull request.
+Work lands on `main`; releases are tagged `vX.Y.Z` as described in [RELEASING.md](https://github.com/mawadao/mawa/blob/main/RELEASING.md).
 
 ## Licence
 

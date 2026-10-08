@@ -1,6 +1,6 @@
 """Gateway-only provisioning and lifecycle orchestration.
 
-This module is the low-level layer that talks to the mawaDao Agent gateway RPC surface.
+This module is the low-level layer that talks to the mawa gateway RPC surface.
 DB-backed workflows (template sync, lead-agent record creation) live in
 `app.services.agent_gateway.provisioning_db`.
 """
@@ -550,7 +550,7 @@ class GatewayControlPlane(ABC):
 
 
 class AgentGatewayControlPlane(GatewayControlPlane):
-    """mawaDao Agent gateway RPC implementation of the lifecycle control-plane contract."""
+    """mawa gateway RPC implementation of the lifecycle control-plane contract."""
 
     def __init__(self, config: GatewayClientConfig) -> None:
         self._config = config
