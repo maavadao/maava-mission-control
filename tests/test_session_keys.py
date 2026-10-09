@@ -1,5 +1,5 @@
 # ruff: noqa: S101
-"""Unit tests for deterministic mawa session-key helpers."""
+"""Unit tests for deterministic maava session-key helpers."""
 
 from __future__ import annotations
 

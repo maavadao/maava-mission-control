@@ -274,7 +274,7 @@ async def test_ensure_member_for_user_creates_personal_org_and_owner(
     )
     assert (
         pack_sources["https://github.com/BrianRWagner/ai-marketing-skills"]
-        == "Marketing frameworks that AI actually executes. Use for Claude Code, mawa, etc."
+        == "Marketing frameworks that AI actually executes. Use for Claude Code, maava, etc."
     )
     assert session.committed == 3
     assert len(session.added_all) == 0

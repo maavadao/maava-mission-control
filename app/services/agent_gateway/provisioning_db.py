@@ -1,4 +1,4 @@
-"""DB-backed mawa orchestration and agent lifecycle services.
+"""DB-backed maava orchestration and agent lifecycle services.
 
 Layering:
 - `app.services.agent_gateway.provisioning` contains gateway-only lifecycle operations (no DB calls).

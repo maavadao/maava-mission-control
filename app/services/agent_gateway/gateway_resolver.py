@@ -1,7 +1,7 @@
 """DB-backed gateway resolution helpers.
 
 This module is the narrow boundary between Mission Control's DB models and the
-DB-free mawa gateway client/provisioning layers.
+DB-free maava gateway client/provisioning layers.
 
 Goals:
 - Centralize "board -> gateway row" resolution and defensive org checks.

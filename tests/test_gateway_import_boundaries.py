@@ -1,5 +1,5 @@
 # ruff: noqa: S101
-"""Architectural boundary tests for mawa service imports."""
+"""Architectural boundary tests for maava service imports."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def test_no_agent_gateway_package_barrel_imports() -> None:
                     violations.append(f"{rel}:{lineno}")
 
     assert not violations, (
-        "Use concrete mawa modules (for example "
+        "Use concrete maava modules (for example "
         "`from app.services.agent_gateway.provisioning_db import ...`) instead of package imports. "
         f"Violations: {', '.join(violations)}"
     )

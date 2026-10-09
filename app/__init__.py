@@ -1,1 +1,1 @@
-"""mawa Mission Control backend application package."""
+"""maava Mission Control backend application package."""

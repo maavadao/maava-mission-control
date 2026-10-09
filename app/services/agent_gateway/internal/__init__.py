@@ -1,4 +1,4 @@
-"""Internal typed helpers shared across mawa service modules.
+"""Internal typed helpers shared across maava service modules.
 
 Import submodules directly (for example: ``app.services.agent_gateway.internal.agent_key``)
 to avoid shadowing submodule names with re-exported symbols.

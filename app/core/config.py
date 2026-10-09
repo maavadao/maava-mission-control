@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     )
 
     environment: str = "dev"
-    database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/mawadao_mission_control"
+    database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/maavadao_mission_control"
     database_schema: str = "mission_control"
 
     # Auth mode: "clerk" for Clerk JWT auth, "local" for shared bearer token auth.
@@ -84,7 +84,7 @@ class Settings(BaseSettings):
     rq_dispatch_retry_base_seconds: float = 10.0
     rq_dispatch_retry_max_seconds: float = 120.0
 
-    # mawa gateway runtime compatibility
+    # maava gateway runtime compatibility
     gateway_min_version: str = "2026.2.3"
 
     # Logging

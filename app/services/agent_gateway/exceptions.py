@@ -1,4 +1,4 @@
-"""mawa-specific exception definitions and mapping helpers."""
+"""maava-specific exception definitions and mapping helpers."""
 
 from __future__ import annotations
 

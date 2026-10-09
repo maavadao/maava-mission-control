@@ -1,7 +1,7 @@
-"""mawa gateway websocket RPC client and protocol constants.
+"""maava gateway websocket RPC client and protocol constants.
 
-This is the low-level, DB-free interface for talking to the mawa gateway.
-Keep gateway RPC protocol details and client helpers here so mawa services
+This is the low-level, DB-free interface for talking to the maava gateway.
+Keep gateway RPC protocol details and client helpers here so maava services
 operate within a single scope (no `app.integrations.*` plumbing).
 """
 
@@ -41,7 +41,7 @@ CONTROL_UI_CLIENT_ID = "openclaw-control-ui"
 CONTROL_UI_CLIENT_MODE = "ui"
 GatewayConnectMode = Literal["device", "control_ui"]
 
-# NOTE: These are the base gateway methods from the mawa gateway repo.
+# NOTE: These are the base gateway methods from the maava gateway repo.
 # The gateway can expose additional methods at runtime via channel plugins.
 GATEWAY_METHODS = [
     "health",
@@ -163,12 +163,12 @@ def is_known_gateway_method(method: str) -> bool:
 
 
 class AgentGatewayError(RuntimeError):
-    """Raised when mawa gateway calls fail."""
+    """Raised when maava gateway calls fail."""
 
 
 @dataclass(frozen=True)
 class GatewayConfig:
-    """Connection configuration for the mawa gateway."""
+    """Connection configuration for the maava gateway."""
 
     url: str
     token: str | None = None

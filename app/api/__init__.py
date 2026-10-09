@@ -1,1 +1,1 @@
-"""API router modules for the mawa Mission Control backend."""
+"""API router modules for the maava Mission Control backend."""

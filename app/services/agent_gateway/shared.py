@@ -1,4 +1,4 @@
-"""Shared mawa lifecycle primitives."""
+"""Shared maava lifecycle primitives."""
 
 from __future__ import annotations
 

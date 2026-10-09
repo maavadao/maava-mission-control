@@ -1,4 +1,4 @@
-"""Normalization helpers for user-facing mawa gateway errors."""
+"""Normalization helpers for user-facing maava gateway errors."""
 
 from __future__ import annotations
 

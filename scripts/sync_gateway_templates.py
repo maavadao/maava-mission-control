@@ -14,7 +14,7 @@ sys.path.insert(0, str(BACKEND_ROOT))
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Sync templates/ to existing mawa gateway agent workspaces.",
+        description="Sync templates/ to existing maava gateway agent workspaces.",
     )
     parser.add_argument("--gateway-id", type=str, required=True, help="Gateway UUID")
     parser.add_argument(

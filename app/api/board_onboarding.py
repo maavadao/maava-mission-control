@@ -253,7 +253,7 @@ async def start_onboarding(
         '- If the user sends an "Additional context" message later, incorporate '
         "it and resend status=complete\n"
         "  to update the draft (until the user confirms).\n"
-        "Do NOT respond in mawa chat.\n"
+        "Do NOT respond in maava chat.\n"
         "All onboarding responses MUST be sent to Mission Control via API.\n"
         f"Mission Control base URL: {base_url}\n"
         "Use the AUTH_TOKEN from USER.md or TOOLS.md and pass it as X-Agent-Token.\n"

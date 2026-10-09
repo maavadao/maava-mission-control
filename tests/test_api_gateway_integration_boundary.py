@@ -1,5 +1,5 @@
 # ruff: noqa: S101
-"""Architectural boundary tests for API/mawa integration usage."""
+"""Architectural boundary tests for API/maava integration usage."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 def test_api_does_not_import_agent_gateway_client_directly() -> None:
-    """API modules should use mawa services, not integration client imports."""
+    """API modules should use maava services, not integration client imports."""
     repo_root = Path(__file__).resolve().parents[2]
     api_root = repo_root / "backend" / "app" / "api"
 
@@ -23,7 +23,7 @@ def test_api_does_not_import_agent_gateway_client_directly() -> None:
                 violations.append(f"{rel}:{lineno}")
 
     assert not violations, (
-        "Import mawa integration details via service modules (for example "
+        "Import maava integration details via service modules (for example "
         "`app.services.agent_gateway.shared`) instead of directly from `app.api`. "
         f"Violations: {', '.join(violations)}"
     )
@@ -46,7 +46,7 @@ def test_api_uses_safe_gateway_dispatch_helper() -> None:
                 violations.append(f"{rel}:{lineno}")
 
     assert not violations, (
-        "Use mawa service modules (for example `app.services.agent_gateway.gateway_dispatch`) "
+        "Use maava service modules (for example `app.services.agent_gateway.gateway_dispatch`) "
         "instead of calling low-level gateway RPC helpers from `app.api`."
         f"Violations: {', '.join(violations)}"
     )

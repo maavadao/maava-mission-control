@@ -1,4 +1,4 @@
-"""mawa authorization policy primitives."""
+"""maava authorization policy primitives."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class AgentAuthorizationPolicy:
-    """Centralized authz checks for mawa lifecycle and coordination actions."""
+    """Centralized authz checks for maava lifecycle and coordination actions."""
 
     _GATEWAY_MAIN_ONLY_DETAIL = "Only the dedicated gateway agent may call this endpoint."
 
